@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Convert OBJ, STL, and FBX files to GLB format for AR viewing">
+    <title>3D Model Converter - AR Viewer</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Three.js for 3D conversion -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+</head>
+
+<body class="converter-page">
+    <!-- Animated Background -->
+    <div class="background-animation">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+    </div>
+
+    <header class="viewer-header">
+        <a href="index.html" class="back-link">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" />
+            </svg>
+            Back
+        </a>
+        <div class="logo-small">
+            <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" />
+            </svg>
+            <span>Model Converter</span>
+        </div>
+    </header>
+
+    <main class="converter-container">
+        <!-- Hero -->
+        <section class="converter-hero">
+            <h1>3D Model <span class="gradient-text">Converter</span></h1>
+            <p>Convert OBJ and STL files to GLB format for AR viewing. No software installation needed.</p>
+        </section>
+
+        <!-- Upload Area -->
+        <section class="upload-section glass-card">
+            <div class="upload-area" id="uploadArea">
+                <input type="file" id="fileInput" accept=".obj,.stl,.gltf,.glb" hidden>
+                <div class="upload-content">
+                    <div class="upload-icon">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            <polyline points="17,8 12,3 7,8" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" />
+                            <line x1="12" y1="3" x2="12" y2="15" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" />
+                        </svg>
+                    </div>
+                    <h3>Drop your 3D model here</h3>
+                    <p>or <button type="button" class="browse-btn" id="browseBtn">browse files</button></p>
+                    <div class="supported-formats">
+                        <span class="format-badge">.OBJ</span>
+                        <span class="format-badge">.STL</span>
+                        <span class="format-badge">.GLTF</span>
+                        <span class="format-badge">.GLB</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MTL Upload (for OBJ files) -->
+        <section class="mtl-section glass-card" id="mtlSection" style="display: none;">
+            <h3>Optional: Add Material File</h3>
+            <p>Your OBJ file may reference a .mtl file for materials and textures.</p>
+            <div class="mtl-upload">
+                <input type="file" id="mtlInput" accept=".mtl" hidden>
+                <button type="button" class="secondary-btn" id="mtlBtn">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                    Add .MTL File
+                </button>
+                <span class="mtl-status" id="mtlStatus"></span>
+            </div>
+        </section>
+
+        <!-- Preview -->
+        <section class="preview-section glass-card" id="previewSection" style="display: none;">
+            <div class="preview-header">
+                <h3>Preview</h3>
+                <span class="file-name" id="fileName"></span>
+            </div>
+            <div class="preview-canvas" id="previewCanvas"></div>
+            <div class="preview-stats" id="previewStats"></div>
+        </section>
+
+        <!-- Converting Status -->
+        <section class="converting-section glass-card" id="convertingSection" style="display: none;">
+            <div class="converting-content">
+                <div class="spinner"></div>
+                <h3>Converting to GLB...</h3>
+                <p id="convertStatus">Processing your 3D model</p>
+            </div>
+        </section>
+
+        <!-- Result -->
+        <section class="result-section glass-card" id="resultSection" style="display: none;">
+            <div class="result-success">
+                <div class="success-icon">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+                        <path d="M8 12L11 15L16 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                    </svg>
+                </div>
+                <h3>Conversion Complete!</h3>
+                <p>Your model is ready for AR viewing</p>
+            </div>
+            <div class="result-actions">
+                <button type="button" class="primary-btn" id="downloadBtn">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        <polyline points="7,10 12,15 17,10" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" />
+                        <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" />
+                    </svg>
+                    Download GLB
+                </button>
+                <button type="button" class="secondary-btn" id="viewArBtn">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M7 7H4C2.89543 7 2 7.89543 2 9V20C2 21.1046 2.89543 22 4 22H15C16.1046 22 17 21.1046 17 20V17"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        <rect x="9" y="2" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2" />
+                    </svg>
+                    View in AR
+                </button>
+                <button type="button" class="ghost-btn" id="convertAnother">
+                    Convert Another
+                </button>
+            </div>
+        </section>
+
+        <!-- Info Section -->
+        <section class="info-section">
+            <div class="info-card glass-card">
+                <h4>📁 Supported Formats</h4>
+                <ul>
+                    <li><strong>OBJ</strong> - Wavefront 3D format (+ optional .MTL)</li>
+                    <li><strong>STL</strong> - 3D printing format</li>
+                    <li><strong>GLTF/GLB</strong> - Modern 3D web format</li>
+                </ul>
+            </div>
+            <div class="info-card glass-card">
+                <h4>🔒 Privacy First</h4>
+                <p>All conversion happens in your browser. Your files never leave your device.</p>
+            </div>
+            <div class="info-card glass-card">
+                <h4>📱 AR Ready</h4>
+                <p>GLB files work on iOS (AR Quick Look) and Android (Scene Viewer) without any app.</p>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="scripts/converter.js"></script>
+</body>
+
+</html>

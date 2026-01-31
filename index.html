@@ -1,329 +1,161 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>AR OBJ Viewer – MindAR + QR</title>
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
-      "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
-    }
-  }
-  </script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: system-ui, sans-serif; overflow: hidden; }
-    #container {
-      width: 100vw;
-      height: 100vh;
-      position: relative;
-      overflow: hidden;
-    }
-    #control {
-      position: fixed;
-      top: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 10;
-      display: flex;
-      gap: 8px;
-      padding: 8px 12px;
-      background: rgba(0,0,0,0.6);
-      border-radius: 12px;
-      backdrop-filter: blur(8px);
-    }
-    #control button {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform 0.15s, opacity 0.15s;
-    }
-    #control button:active { transform: scale(0.97); }
-    #startButton { background: #22c55e; color: #fff; }
-    #startButton:hover { background: #16a34a; }
-    #stopButton { background: #ef4444; color: #fff; }
-    #stopButton:hover { background: #dc2626; }
-    #stopButton:disabled { opacity: 0.5; cursor: not-allowed; }
-    #shareQrBtn { background: #3b82f6; color: #fff; }
-    #shareQrBtn:hover { background: #2563eb; }
-    #hint {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 10;
-      padding: 12px 20px;
-      background: rgba(0,0,0,0.7);
-      color: #e5e5e5;
-      border-radius: 10px;
-      font-size: 13px;
-      max-width: 90%;
-      text-align: center;
-    }
-    #loading {
-      position: fixed;
-      inset: 0;
-      z-index: 20;
-      background: #0f0f0f;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 20px;
-      color: #fff;
-      transition: opacity 0.3s;
-    }
-    #loading.hidden { opacity: 0; pointer-events: none; }
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid rgba(255,255,255,0.2);
-      border-top-color: #22c55e;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    #qrcodeContainer {
-      margin-top: 8px;
-      padding: 16px;
-      background: #fff;
-      border-radius: 12px;
-      text-align: center;
-    }
-    #qrcodeContainer p {
-      color: #1f2937;
-      font-size: 13px;
-      margin-top: 10px;
-      max-width: 260px;
-    }
-    #qrcode { display: inline-block; }
-    #sharePanel {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 30;
-      padding: 24px;
-      background: #1f2937;
-      border-radius: 16px;
-      text-align: center;
-      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
-      display: none;
-    }
-    #sharePanel.visible { display: block; }
-    #sharePanel .close {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      background: transparent;
-      border: none;
-      color: #9ca3af;
-      font-size: 24px;
-      cursor: pointer;
-      line-height: 1;
-    }
-    #sharePanel h3 { color: #fff; margin-bottom: 12px; font-size: 16px; }
-    #sharePanel #shareQr { background: #fff; padding: 12px; border-radius: 8px; display: inline-block; }
-    #sharePanel .url { color: #9ca3af; font-size: 12px; margin-top: 12px; word-break: break-all; }
-    #overlay { position: fixed; inset: 0; z-index: 25; background: rgba(0,0,0,0.5); display: none; }
-    #overlay.visible { display: block; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="View stunning 3D models in Augmented Reality on your iOS or Android device. Scan the QR code to start your immersive AR experience.">
+    <title>AR Viewer - Experience 3D in Augmented Reality</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
-  <div id="loading">
-    <div class="spinner"></div>
-    <span>Loading AR and 3D model…</span>
-    <div id="qrcodeContainer">
-      <div id="qrcode"></div>
-      <p>Scan to open this AR experience</p>
+    <!-- Animated Background -->
+    <div class="background-animation">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
     </div>
-  </div>
-  <div id="control">
-    <button id="startButton">Start AR</button>
-    <button id="stopButton" disabled>Stop AR</button>
-    <button id="shareQrBtn" type="button">Share (QR)</button>
-  </div>
-  <div id="container"></div>
-  <div id="hint">Point your camera at the target image to see the 3D model.</div>
 
-  <div id="overlay"></div>
-  <div id="sharePanel">
-    <button class="close" type="button" aria-label="Close">&times;</button>
-    <h3>Scan to open this AR experience</h3>
-    <div id="shareQr"></div>
-    <p class="url" id="shareUrl"></p>
-  </div>
+    <main class="container">
+        <!-- Hero Section -->
+        <header class="hero">
+            <div class="logo">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+                <span>AR Viewer</span>
+            </div>
+            <h1 class="hero-title">
+                Experience 3D in
+                <span class="gradient-text">Augmented Reality</span>
+            </h1>
+            <p class="hero-subtitle">
+                Scan the QR code with your mobile device to view stunning 3D models
+                in your real-world environment. No app required.
+            </p>
+        </header>
 
-  <script type="module">
-    import * as THREE from 'three';
-    import { MindARThree } from 'mindar-image-three';
-    import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
-    import { MTLLoader } from 'three/addons/loaders/MTLLoader.js';
+        <!-- QR Code Section -->
+        <section class="qr-section">
+            <div class="qr-card glass-card">
+                <div class="qr-container">
+                    <div id="qrcode" class="qr-code"></div>
+                    <div class="qr-glow"></div>
+                </div>
+                <div class="qr-info">
+                    <h2>Scan to View in AR</h2>
+                    <p>Point your phone camera at the QR code</p>
+                </div>
+            </div>
+        </section>
 
-    // ——— Config: set your file paths here ———
-    const CONFIG = {
-      // URL or path to your .obj 3D model (relative to page or full URL)
-      OBJ_MODEL_URL: './model.obj',
-      // Optional: URL or path to your .mtl file (same folder as OBJ or full path). Leave '' if no MTL.
-      OBJ_MTL_URL: '',
-      // URL or path to your compiled target (.mind) – use MindAR compiler with a QR code image
-      // Compiler: https://hiukim.github.io/mind-ar-js-doc/tools/compile
-      IMAGE_TARGET_MIND_URL: 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind',
-      // Scale of the model on the target (tune for your model size)
-      MODEL_SCALE: 1,
-      // Optional: position offset [x, y, z] from the target center
-      MODEL_POSITION_OFFSET: [0, 0, 0],
-      // URL shown in the QR code (where this page is hosted). Leave '' to use current page URL.
-      HOSTED_PAGE_URL: 'https://payush15.github.io/cursor-hack/',
-    };
+        <!-- Device Support -->
+        <section class="devices-section">
+            <h3 class="section-title">Supported Devices</h3>
+            <div class="devices-grid">
+                <div class="device-card glass-card">
+                    <div class="device-icon">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="5" y="2" width="14" height="20" rx="3" stroke="currentColor" stroke-width="2" />
+                            <line x1="12" y1="18" x2="12" y2="18" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" />
+                        </svg>
+                    </div>
+                    <h4>iOS</h4>
+                    <p>iPhone & iPad with iOS 12+</p>
+                    <span class="badge">AR Quick Look</span>
+                </div>
+                <div class="device-card glass-card">
+                    <div class="device-icon">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="5" y="2" width="14" height="20" rx="2" stroke="currentColor" stroke-width="2" />
+                            <line x1="9" y1="18" x2="15" y2="18" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" />
+                        </svg>
+                    </div>
+                    <h4>Android</h4>
+                    <p>ARCore supported devices</p>
+                    <span class="badge">Scene Viewer</span>
+                </div>
+            </div>
+        </section>
 
-    const container = document.querySelector('#container');
-    const loadingEl = document.querySelector('#loading');
-    const startButton = document.querySelector('#startButton');
-    const stopButton = document.querySelector('#stopButton');
+        <!-- Models Preview -->
+        <section class="models-section">
+            <h3 class="section-title">Available 3D Models</h3>
+            <div class="models-grid">
+                <a href="viewer.html?model=astronaut" class="model-card glass-card">
+                    <div class="model-preview">
+                        <img src="https://modelviewer.dev/shared-assets/models/Astronaut.png" alt="Astronaut 3D Model"
+                            loading="lazy">
+                    </div>
+                    <div class="model-info">
+                        <h4>Astronaut</h4>
+                        <span class="view-link">View in AR →</span>
+                    </div>
+                </a>
+                <a href="viewer.html?model=robot" class="model-card glass-card">
+                    <div class="model-preview">
+                        <img src="https://modelviewer.dev/assets/poster-shishkebab.png" alt="Robot 3D Model"
+                            loading="lazy">
+                    </div>
+                    <div class="model-info">
+                        <h4>Shish Kebab</h4>
+                        <span class="view-link">View in AR →</span>
+                    </div>
+                </a>
+                <a href="viewer.html?model=chair" class="model-card glass-card">
+                    <div class="model-preview">
+                        <img src="https://modelviewer.dev/assets/poster-chair.webp" alt="Chair 3D Model" loading="lazy">
+                    </div>
+                    <div class="model-info">
+                        <h4>Modern Chair</h4>
+                        <span class="view-link">View in AR →</span>
+                    </div>
+                </a>
+            </div>
+        </section>
 
-    const pageUrl = CONFIG.HOSTED_PAGE_URL || (typeof window !== 'undefined' ? window.location.href : '');
-    if (typeof QRCode !== 'undefined' && pageUrl) {
-      new QRCode(document.getElementById('qrcode'), { text: pageUrl, width: 180, height: 180 });
-    }
+        <!-- Instructions -->
+        <section class="instructions-section">
+            <h3 class="section-title">How It Works</h3>
+            <div class="steps-grid">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <h4>Scan QR Code</h4>
+                    <p>Use your phone's camera to scan the QR code above</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <h4>Choose a Model</h4>
+                    <p>Select from our collection of amazing 3D models</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <h4>View in AR</h4>
+                    <p>Tap the AR button to place the model in your space</p>
+                </div>
+            </div>
+        </section>
+    </main>
 
-    const mindarThree = new MindARThree({
-      container,
-      imageTargetSrc: CONFIG.IMAGE_TARGET_MIND_URL,
-    });
+    <footer class="footer">
+        <p>Powered by <a href="https://modelviewer.dev" target="_blank" rel="noopener">model-viewer</a></p>
+    </footer>
 
-    const { renderer, scene, camera } = mindarThree;
-    const anchor = mindarThree.addAnchor(0);
-
-    function addModelToAnchor(model) {
-      model.scale.setScalar(CONFIG.MODEL_SCALE);
-      model.position.set(
-        CONFIG.MODEL_POSITION_OFFSET[0],
-        CONFIG.MODEL_POSITION_OFFSET[1],
-        CONFIG.MODEL_POSITION_OFFSET[2]
-      );
-      anchor.group.add(model);
-      hideLoading();
-    }
-
-    function loadObj() {
-      const objLoader = new OBJLoader();
-
-      if (CONFIG.OBJ_MTL_URL) {
-        const mtlLoader = new MTLLoader();
-        const lastSlash = CONFIG.OBJ_MTL_URL.lastIndexOf('/');
-        const mtlDir = lastSlash >= 0 ? CONFIG.OBJ_MTL_URL.slice(0, lastSlash + 1) : './';
-        mtlLoader.setPath(mtlDir);
-        mtlLoader.load(CONFIG.OBJ_MTL_URL, (materials) => {
-          materials.preload();
-          objLoader.setMaterials(materials);
-          objLoader.load(
-            CONFIG.OBJ_MODEL_URL,
-            (model) => addModelToAnchor(model),
-            undefined,
-            (err) => {
-              console.error('OBJ load error:', err);
-              addPlaceholder();
-            }
-          );
-        }, undefined, () => {
-          objLoader.load(
-            CONFIG.OBJ_MODEL_URL,
-            (model) => {
-              model.traverse((child) => {
-                if (child.isMesh && !child.material) {
-                  child.material = new THREE.MeshLambertMaterial({ color: 0xcccccc });
-                }
-              });
-              addModelToAnchor(model);
-            },
-            undefined,
-            (err) => {
-              console.error('OBJ load error:', err);
-              addPlaceholder();
-            }
-          );
-        });
-      } else {
-        objLoader.load(
-          CONFIG.OBJ_MODEL_URL,
-          (model) => {
-            model.traverse((child) => {
-              if (child.isMesh && !child.material) {
-                child.material = new THREE.MeshLambertMaterial({ color: 0xcccccc });
-              }
-            });
-            addModelToAnchor(model);
-          },
-          undefined,
-          (err) => {
-            console.error('OBJ load error:', err);
-            addPlaceholder();
-          }
-        );
-      }
-    }
-
-    function addPlaceholder() {
-      const geometry = new THREE.BoxGeometry(0.3, 0.3, 0.3);
-      const material = new THREE.MeshNormalMaterial();
-      const cube = new THREE.Mesh(geometry, material);
-      anchor.group.add(cube);
-      hideLoading();
-    }
-
-    loadObj();
-
-    function hideLoading() {
-      loadingEl.classList.add('hidden');
-    }
-
-    function showShareQr() {
-      const panel = document.getElementById('sharePanel');
-      const overlay = document.getElementById('overlay');
-      const shareQrEl = document.getElementById('shareQr');
-      const shareUrlEl = document.getElementById('shareUrl');
-      shareQrEl.innerHTML = '';
-      shareUrlEl.textContent = pageUrl;
-      if (typeof QRCode !== 'undefined' && pageUrl) {
-        new QRCode(shareQrEl, { text: pageUrl, width: 200, height: 200 });
-      }
-      panel.classList.add('visible');
-      overlay.classList.add('visible');
-    }
-
-    function hideShareQr() {
-      document.getElementById('sharePanel').classList.remove('visible');
-      document.getElementById('overlay').classList.remove('visible');
-    }
-
-    document.getElementById('shareQrBtn').addEventListener('click', showShareQr);
-    document.querySelector('#sharePanel .close').addEventListener('click', hideShareQr);
-    document.getElementById('overlay').addEventListener('click', hideShareQr);
-
-    async function start() {
-      await mindarThree.start();
-      renderer.setAnimationLoop(() => {
-        renderer.render(scene, camera);
-      });
-      stopButton.disabled = false;
-    }
-
-    function stop() {
-      mindarThree.stop();
-      mindarThree.renderer.setAnimationLoop(null);
-      stopButton.disabled = true;
-    }
-
-    startButton.addEventListener('click', () => start());
-    stopButton.addEventListener('click', () => stop());
-  </script>
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="scripts/app.js"></script>
 </body>
+
 </html>
