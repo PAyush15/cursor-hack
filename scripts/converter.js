@@ -148,7 +148,10 @@ async function processFile(file) {
         convertStatus.textContent = 'Converting to GLB...';
         await convertToGLB(currentScene);
 
-        showSection('result');
+        // Auto-redirect to viewer after successful conversion
+        const modelName = currentFile.name.replace(/\.[^.]+$/, '');
+        await storeModelInIndexedDB(glbBlob, modelName);
+        window.location.href = 'viewer.html?model=custom&name=' + encodeURIComponent(modelName);
 
     } catch (error) {
         console.error('Error processing file:', error);
@@ -377,10 +380,11 @@ function viewInAR() {
 
 /**
  * Store model in IndexedDB for large file support
+ * Stores as 'customModel' (current) and also adds to models list
  */
 function storeModelInIndexedDB(blob, name) {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open('ARViewerDB', 1);
+        const request = indexedDB.open('ARViewerDB', 2);
 
         request.onerror = () => reject(request.error);
 
@@ -389,23 +393,41 @@ function storeModelInIndexedDB(blob, name) {
             if (!db.objectStoreNames.contains('models')) {
                 db.createObjectStore('models', { keyPath: 'id' });
             }
+            if (!db.objectStoreNames.contains('uploadedModels')) {
+                db.createObjectStore('uploadedModels', { keyPath: 'id' });
+            }
         };
 
         request.onsuccess = (event) => {
             const db = event.target.result;
-            const transaction = db.transaction(['models'], 'readwrite');
+            const transaction = db.transaction(['models', 'uploadedModels'], 'readwrite');
             const store = transaction.objectStore('models');
+            const uploadedStore = transaction.objectStore('uploadedModels');
 
-            const modelData = {
+            const timestamp = Date.now();
+            const uniqueId = 'model_' + timestamp;
+
+            // Store as current custom model
+            const currentModelData = {
                 id: 'customModel',
                 name: name,
                 blob: blob,
-                timestamp: Date.now()
+                timestamp: timestamp
             };
 
-            const putRequest = store.put(modelData);
-            putRequest.onsuccess = () => resolve();
-            putRequest.onerror = () => reject(putRequest.error);
+            // Also store in uploaded models list
+            const uploadedModelData = {
+                id: uniqueId,
+                name: name,
+                blob: blob,
+                timestamp: timestamp
+            };
+
+            store.put(currentModelData);
+            uploadedStore.put(uploadedModelData);
+
+            transaction.oncomplete = () => resolve(uniqueId);
+            transaction.onerror = () => reject(transaction.error);
         };
     });
 }

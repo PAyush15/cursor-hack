@@ -63,11 +63,127 @@ function initElements() {
 function initModelFromURL() {
     const params = new URLSearchParams(window.location.search);
     const modelKey = params.get('model') || 'astronaut';
+    const modelId = params.get('id');
+    const modelName = params.get('name');
 
+    // Handle custom model from converter
+    if (modelKey === 'custom') {
+        loadCustomModelFromDB(modelName);
+        return;
+    }
+
+    // Handle uploaded model by ID
+    if (modelKey === 'uploaded' && modelId) {
+        loadUploadedModelById(modelId);
+        return;
+    }
+
+    // Load predefined model
     if (MODELS[modelKey]) {
         loadModel(modelKey);
         updateActiveThumb(modelKey);
     }
+}
+
+/**
+ * Load custom model from IndexedDB
+ */
+function loadCustomModelFromDB(name) {
+    const request = indexedDB.open('ARViewerDB', 2);
+
+    request.onerror = () => {
+        console.error('Failed to open IndexedDB');
+        loadModel('astronaut');
+    };
+
+    request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains('models')) {
+            db.createObjectStore('models', { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains('uploadedModels')) {
+            db.createObjectStore('uploadedModels', { keyPath: 'id' });
+        }
+    };
+
+    request.onsuccess = (event) => {
+        const db = event.target.result;
+
+        if (!db.objectStoreNames.contains('models')) {
+            loadModel('astronaut');
+            return;
+        }
+
+        const transaction = db.transaction(['models'], 'readonly');
+        const store = transaction.objectStore('models');
+        const getRequest = store.get('customModel');
+
+        getRequest.onsuccess = () => {
+            const modelData = getRequest.result;
+            if (modelData && modelData.blob) {
+                displayCustomModel(modelData.blob, name || modelData.name);
+            } else {
+                loadModel('astronaut');
+            }
+        };
+
+        getRequest.onerror = () => {
+            loadModel('astronaut');
+        };
+    };
+}
+
+/**
+ * Load uploaded model by specific ID
+ */
+function loadUploadedModelById(modelId) {
+    const request = indexedDB.open('ARViewerDB', 2);
+
+    request.onsuccess = (event) => {
+        const db = event.target.result;
+
+        if (!db.objectStoreNames.contains('uploadedModels')) {
+            loadModel('astronaut');
+            return;
+        }
+
+        const transaction = db.transaction(['uploadedModels'], 'readonly');
+        const store = transaction.objectStore('uploadedModels');
+        const getRequest = store.get(modelId);
+
+        getRequest.onsuccess = () => {
+            const modelData = getRequest.result;
+            if (modelData && modelData.blob) {
+                displayCustomModel(modelData.blob, modelData.name);
+            } else {
+                loadModel('astronaut');
+            }
+        };
+
+        getRequest.onerror = () => {
+            loadModel('astronaut');
+        };
+    };
+
+    request.onerror = () => {
+        loadModel('astronaut');
+    };
+}
+
+/**
+ * Display a custom model from a Blob
+ */
+function displayCustomModel(blob, name) {
+    const url = URL.createObjectURL(blob);
+
+    modelViewer.setAttribute('src', url);
+    modelViewer.removeAttribute('poster');
+    modelViewer.removeAttribute('ios-src');
+
+    modelTitle.textContent = name || 'Custom Model';
+    modelDescription.textContent = 'Your uploaded 3D model. Tap "View in AR" to place it in your space.';
+
+    updateActiveThumb('custom');
 }
 
 /**
