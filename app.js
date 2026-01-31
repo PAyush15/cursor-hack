@@ -16,8 +16,15 @@ function initQRCode() {
     const qrContainer = document.getElementById('qrcode');
     if (!qrContainer) return;
 
-    // Determine the viewer URL
-    const baseUrl = window.location.origin + window.location.pathname.replace('index.html', '').replace(/\/$/, '');
+    // Use GitHub Pages URL for production, or current URL for local dev
+    const GITHUB_PAGES_URL = 'https://payush15.github.io/cursor-hack';
+
+    // Detect if we're on GitHub Pages or localhost
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const baseUrl = isLocalhost
+        ? window.location.origin + window.location.pathname.replace('index.html', '').replace(/\/$/, '')
+        : GITHUB_PAGES_URL;
+
     const viewerUrl = baseUrl + '/viewer.html';
 
     // Log the URL for debugging
