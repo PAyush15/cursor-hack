@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>AR OBJ Viewer – MindAR + QR</title>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+      "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
+    }
+  }
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; overflow: hidden; }
+    #container {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+      overflow: hidden;
+    }
+    #control {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(0,0,0,0.6);
+      border-radius: 12px;
+      backdrop-filter: blur(8px);
+    }
+    #control button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s;
+    }
+    #control button:active { transform: scale(0.97); }
+    #startButton { background: #22c55e; color: #fff; }
+    #startButton:hover { background: #16a34a; }
+    #stopButton { background: #ef4444; color: #fff; }
+    #stopButton:hover { background: #dc2626; }
+    #stopButton:disabled { opacity: 0.5; cursor: not-allowed; }
+    #shareQrBtn { background: #3b82f6; color: #fff; }
+    #shareQrBtn:hover { background: #2563eb; }
+    #hint {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      padding: 12px 20px;
+      background: rgba(0,0,0,0.7);
+      color: #e5e5e5;
+      border-radius: 10px;
+      font-size: 13px;
+      max-width: 90%;
+      text-align: center;
+    }
+    #loading {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      background: #0f0f0f;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      color: #fff;
+      transition: opacity 0.3s;
+    }
+    #loading.hidden { opacity: 0; pointer-events: none; }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255,255,255,0.2);
+      border-top-color: #22c55e;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #qrcodeContainer {
+      margin-top: 8px;
+      padding: 16px;
+      background: #fff;
+      border-radius: 12px;
+      text-align: center;
+    }
+    #qrcodeContainer p {
+      color: #1f2937;
+      font-size: 13px;
+      margin-top: 10px;
+      max-width: 260px;
+    }
+    #qrcode { display: inline-block; }
+    #sharePanel {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 30;
+      padding: 24px;
+      background: #1f2937;
+      border-radius: 16px;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+      display: none;
+    }
+    #sharePanel.visible { display: block; }
+    #sharePanel .close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: transparent;
+      border: none;
+      color: #9ca3af;
+      font-size: 24px;
+      cursor: pointer;
+      line-height: 1;
+    }
+    #sharePanel h3 { color: #fff; margin-bottom: 12px; font-size: 16px; }
+    #sharePanel #shareQr { background: #fff; padding: 12px; border-radius: 8px; display: inline-block; }
+    #sharePanel .url { color: #9ca3af; font-size: 12px; margin-top: 12px; word-break: break-all; }
+    #overlay { position: fixed; inset: 0; z-index: 25; background: rgba(0,0,0,0.5); display: none; }
+    #overlay.visible { display: block; }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <div class="spinner"></div>
+    <span>Loading AR and 3D model…</span>
+    <div id="qrcodeContainer">
+      <div id="qrcode"></div>
+      <p>Scan to open this AR experience</p>
+    </div>
+  </div>
+  <div id="control">
+    <button id="startButton">Start AR</button>
+    <button id="stopButton" disabled>Stop AR</button>
+    <button id="shareQrBtn" type="button">Share (QR)</button>
+  </div>
+  <div id="container"></div>
+  <div id="hint">Point your camera at the target image to see the 3D model.</div>
+
+  <div id="overlay"></div>
+  <div id="sharePanel">
+    <button class="close" type="button" aria-label="Close">&times;</button>
+    <h3>Scan to open this AR experience</h3>
+    <div id="shareQr"></div>
+    <p class="url" id="shareUrl"></p>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { MindARThree } from 'mindar-image-three';
+    import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+    import { MTLLoader } from 'three/addons/loaders/MTLLoader.js';
+
+    // ——— Config: set your file paths here ———
+    const CONFIG = {
+      // URL or path to your .obj 3D model (relative to page or full URL)
+      OBJ_MODEL_URL: './model.obj',
+      // Optional: URL or path to your .mtl file (same folder as OBJ or full path). Leave '' if no MTL.
+      OBJ_MTL_URL: '',
+      // URL or path to your compiled target (.mind) – use MindAR compiler with a QR code image
+      // Compiler: https://hiukim.github.io/mind-ar-js-doc/tools/compile
+      IMAGE_TARGET_MIND_URL: 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind',
+      // Scale of the model on the target (tune for your model size)
+      MODEL_SCALE: 1,
+      // Optional: position offset [x, y, z] from the target center
+      MODEL_POSITION_OFFSET: [0, 0, 0],
+      // URL shown in the QR code (where this page is hosted). Leave '' to use current page URL.
+      HOSTED_PAGE_URL: 'https://payush15.github.io/cursor-hack/',
+    };
+
+    const container = document.querySelector('#container');
+    const loadingEl = document.querySelector('#loading');
+    const startButton = document.querySelector('#startButton');
+    const stopButton = document.querySelector('#stopButton');
+
+    const pageUrl = CONFIG.HOSTED_PAGE_URL || (typeof window !== 'undefined' ? window.location.href : '');
+    if (typeof QRCode !== 'undefined' && pageUrl) {
+      new QRCode(document.getElementById('qrcode'), { text: pageUrl, width: 180, height: 180 });
+    }
+
+    const mindarThree = new MindARThree({
+      container,
+      imageTargetSrc: CONFIG.IMAGE_TARGET_MIND_URL,
+    });
+
+    const { renderer, scene, camera } = mindarThree;
+    const anchor = mindarThree.addAnchor(0);
+
+    function addModelToAnchor(model) {
+      model.scale.setScalar(CONFIG.MODEL_SCALE);
+      model.position.set(
+        CONFIG.MODEL_POSITION_OFFSET[0],
+        CONFIG.MODEL_POSITION_OFFSET[1],
+        CONFIG.MODEL_POSITION_OFFSET[2]
+      );
+      anchor.group.add(model);
+      hideLoading();
+    }
+
+    function loadObj() {
+      const objLoader = new OBJLoader();
+
+      if (CONFIG.OBJ_MTL_URL) {
+        const mtlLoader = new MTLLoader();
+        const lastSlash = CONFIG.OBJ_MTL_URL.lastIndexOf('/');
+        const mtlDir = lastSlash >= 0 ? CONFIG.OBJ_MTL_URL.slice(0, lastSlash + 1) : './';
+        mtlLoader.setPath(mtlDir);
+        mtlLoader.load(CONFIG.OBJ_MTL_URL, (materials) => {
+          materials.preload();
+          objLoader.setMaterials(materials);
+          objLoader.load(
+            CONFIG.OBJ_MODEL_URL,
+            (model) => addModelToAnchor(model),
+            undefined,
+            (err) => {
+              console.error('OBJ load error:', err);
+              addPlaceholder();
+            }
+          );
+        }, undefined, () => {
+          objLoader.load(
+            CONFIG.OBJ_MODEL_URL,
+            (model) => {
+              model.traverse((child) => {
+                if (child.isMesh && !child.material) {
+                  child.material = new THREE.MeshLambertMaterial({ color: 0xcccccc });
+                }
+              });
+              addModelToAnchor(model);
+            },
+            undefined,
+            (err) => {
+              console.error('OBJ load error:', err);
+              addPlaceholder();
+            }
+          );
+        });
+      } else {
+        objLoader.load(
+          CONFIG.OBJ_MODEL_URL,
+          (model) => {
+            model.traverse((child) => {
+              if (child.isMesh && !child.material) {
+                child.material = new THREE.MeshLambertMaterial({ color: 0xcccccc });
+              }
+            });
+            addModelToAnchor(model);
+          },
+          undefined,
+          (err) => {
+            console.error('OBJ load error:', err);
+            addPlaceholder();
+          }
+        );
+      }
+    }
+
+    function addPlaceholder() {
+      const geometry = new THREE.BoxGeometry(0.3, 0.3, 0.3);
+      const material = new THREE.MeshNormalMaterial();
+      const cube = new THREE.Mesh(geometry, material);
+      anchor.group.add(cube);
+      hideLoading();
+    }
+
+    loadObj();
+
+    function hideLoading() {
+      loadingEl.classList.add('hidden');
+    }
+
+    function showShareQr() {
+      const panel = document.getElementById('sharePanel');
+      const overlay = document.getElementById('overlay');
+      const shareQrEl = document.getElementById('shareQr');
+      const shareUrlEl = document.getElementById('shareUrl');
+      shareQrEl.innerHTML = '';
+      shareUrlEl.textContent = pageUrl;
+      if (typeof QRCode !== 'undefined' && pageUrl) {
+        new QRCode(shareQrEl, { text: pageUrl, width: 200, height: 200 });
+      }
+      panel.classList.add('visible');
+      overlay.classList.add('visible');
+    }
+
+    function hideShareQr() {
+      document.getElementById('sharePanel').classList.remove('visible');
+      document.getElementById('overlay').classList.remove('visible');
+    }
+
+    document.getElementById('shareQrBtn').addEventListener('click', showShareQr);
+    document.querySelector('#sharePanel .close').addEventListener('click', hideShareQr);
+    document.getElementById('overlay').addEventListener('click', hideShareQr);
+
+    async function start() {
+      await mindarThree.start();
+      renderer.setAnimationLoop(() => {
+        renderer.render(scene, camera);
+      });
+      stopButton.disabled = false;
+    }
+
+    function stop() {
+      mindarThree.stop();
+      mindarThree.renderer.setAnimationLoop(null);
+      stopButton.disabled = true;
+    }
+
+    startButton.addEventListener('click', () => start());
+    stopButton.addEventListener('click', () => stop());
+  </script>
+</body>
+</html>
