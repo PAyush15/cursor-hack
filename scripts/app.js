@@ -10,7 +10,53 @@ let latestModelName = null;
 document.addEventListener('DOMContentLoaded', () => {
     loadUploadedModels();
     initAnimations();
+    checkForNewUpload();
 });
+
+/**
+ * Check if user just uploaded a model and show notification
+ */
+function checkForNewUpload() {
+    const params = new URLSearchParams(window.location.search);
+    const uploadedName = params.get('uploaded');
+
+    if (uploadedName) {
+        // Show success notification
+        showUploadNotification(uploadedName);
+
+        // Clean up URL
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.delete('uploaded');
+        history.replaceState({}, '', newUrl);
+    }
+}
+
+/**
+ * Show upload success notification
+ */
+function showUploadNotification(modelName) {
+    const notification = document.createElement('div');
+    notification.className = 'upload-notification';
+    notification.innerHTML = `
+        <div class="notification-content">
+            <span class="notification-icon">✓</span>
+            <div>
+                <strong>${modelName}</strong> uploaded successfully!
+                <p>QR code updated • Model added to your list</p>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(notification);
+
+    // Animate in
+    setTimeout(() => notification.classList.add('show'), 100);
+
+    // Remove after 5 seconds
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    }, 5000);
+}
 
 /**
  * Load uploaded models from IndexedDB and initialize QR code
@@ -330,6 +376,41 @@ style.textContent = `
     
     #your-models-section .section-title {
         color: #22c55e;
+    }
+    
+    .upload-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+        color: white;
+        padding: 16px 24px;
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(34, 197, 94, 0.3);
+        z-index: 1000;
+        transform: translateX(120%);
+        transition: transform 0.3s ease;
+    }
+    
+    .upload-notification.show {
+        transform: translateX(0);
+    }
+    
+    .notification-content {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .notification-icon {
+        font-size: 24px;
+        font-weight: bold;
+    }
+    
+    .notification-content p {
+        margin: 4px 0 0;
+        font-size: 0.85rem;
+        opacity: 0.9;
     }
 `;
 document.head.appendChild(style);

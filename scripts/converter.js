@@ -148,10 +148,11 @@ async function processFile(file) {
         convertStatus.textContent = 'Converting to GLB...';
         await convertToGLB(currentScene);
 
-        // Auto-redirect to viewer after successful conversion
+        // Auto-redirect to index after successful conversion
+        // The index page will show the uploaded model and update QR code
         const modelName = currentFile.name.replace(/\.[^.]+$/, '');
         await storeModelInIndexedDB(glbBlob, modelName);
-        window.location.href = 'viewer.html?model=custom&name=' + encodeURIComponent(modelName);
+        window.location.href = 'index.html?uploaded=' + encodeURIComponent(modelName);
 
     } catch (error) {
         console.error('Error processing file:', error);
