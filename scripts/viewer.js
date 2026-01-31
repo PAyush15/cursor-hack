@@ -89,47 +89,60 @@ function initModelFromURL() {
  * Load custom model from IndexedDB
  */
 function loadCustomModelFromDB(name) {
+    console.log('Loading custom model from IndexedDB...');
+
     const request = indexedDB.open('ARViewerDB', 2);
 
-    request.onerror = () => {
-        console.error('Failed to open IndexedDB');
+    request.onerror = (event) => {
+        console.error('Failed to open IndexedDB:', event.target.error);
+        console.log('Falling back to default model');
         loadModel('astronaut');
     };
 
     request.onupgradeneeded = (event) => {
+        console.log('Upgrading IndexedDB...');
         const db = event.target.result;
         if (!db.objectStoreNames.contains('models')) {
             db.createObjectStore('models', { keyPath: 'id' });
-        }
-        if (!db.objectStoreNames.contains('uploadedModels')) {
-            db.createObjectStore('uploadedModels', { keyPath: 'id' });
         }
     };
 
     request.onsuccess = (event) => {
         const db = event.target.result;
+        console.log('IndexedDB opened, stores:', Array.from(db.objectStoreNames));
 
         if (!db.objectStoreNames.contains('models')) {
+            console.log('No models store found');
             loadModel('astronaut');
             return;
         }
 
-        const transaction = db.transaction(['models'], 'readonly');
-        const store = transaction.objectStore('models');
-        const getRequest = store.get('customModel');
+        try {
+            const transaction = db.transaction(['models'], 'readonly');
+            const store = transaction.objectStore('models');
+            const getRequest = store.get('customModel');
 
-        getRequest.onsuccess = () => {
-            const modelData = getRequest.result;
-            if (modelData && modelData.blob) {
-                displayCustomModel(modelData.blob, name || modelData.name);
-            } else {
+            getRequest.onsuccess = () => {
+                const modelData = getRequest.result;
+                console.log('Model data retrieved:', modelData ? 'Found' : 'Not found');
+
+                if (modelData && modelData.blob) {
+                    console.log('Loading custom model:', modelData.name, 'Size:', modelData.blob.size);
+                    displayCustomModel(modelData.blob, name || modelData.name);
+                } else {
+                    console.log('No blob data, loading default');
+                    loadModel('astronaut');
+                }
+            };
+
+            getRequest.onerror = (event) => {
+                console.error('Error getting model:', event.target.error);
                 loadModel('astronaut');
-            }
-        };
-
-        getRequest.onerror = () => {
+            };
+        } catch (error) {
+            console.error('Transaction error:', error);
             loadModel('astronaut');
-        };
+        }
     };
 }
 

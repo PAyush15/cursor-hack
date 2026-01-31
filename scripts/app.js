@@ -59,7 +59,7 @@ function showUploadNotification(modelName) {
 }
 
 /**
- * Load uploaded models from IndexedDB and initialize QR code
+ * Load the custom model from IndexedDB and initialize QR code
  */
 function loadUploadedModels() {
     const request = indexedDB.open('ARViewerDB', 2);
@@ -74,117 +74,98 @@ function loadUploadedModels() {
         if (!db.objectStoreNames.contains('models')) {
             db.createObjectStore('models', { keyPath: 'id' });
         }
-        if (!db.objectStoreNames.contains('uploadedModels')) {
-            db.createObjectStore('uploadedModels', { keyPath: 'id' });
-        }
     };
 
     request.onsuccess = (event) => {
         const db = event.target.result;
 
-        // Check if uploadedModels store exists
-        if (!db.objectStoreNames.contains('uploadedModels')) {
+        // Check if models store exists
+        if (!db.objectStoreNames.contains('models')) {
             initQRCode(null);
             return;
         }
 
-        const transaction = db.transaction(['uploadedModels'], 'readonly');
-        const store = transaction.objectStore('uploadedModels');
-        const getAllRequest = store.getAll();
+        const transaction = db.transaction(['models'], 'readonly');
+        const store = transaction.objectStore('models');
+        const getRequest = store.get('customModel');
 
-        getAllRequest.onsuccess = () => {
-            uploadedModels = getAllRequest.result || [];
-            // Sort by timestamp, newest first
-            uploadedModels.sort((a, b) => b.timestamp - a.timestamp);
+        getRequest.onsuccess = () => {
+            const modelData = getRequest.result;
 
-            if (uploadedModels.length > 0) {
-                latestModelName = uploadedModels[0].name;
+            if (modelData && modelData.name) {
+                latestModelName = modelData.name;
+                console.log('Found custom model:', latestModelName);
+
+                // Initialize QR code with this model
+                initQRCode(latestModelName);
+
+                // Add to models grid
+                renderCustomModel(modelData);
+            } else {
+                initQRCode(null);
             }
-
-            // Initialize QR code with latest model
-            initQRCode(latestModelName);
-
-            // Render uploaded models section
-            renderUploadedModels();
         };
 
-        getAllRequest.onerror = () => {
+        getRequest.onerror = () => {
             initQRCode(null);
         };
     };
 }
 
 /**
- * Render uploaded models in the UI
+ * Render the custom model in the existing models grid (at the beginning)
  */
-function renderUploadedModels() {
-    if (uploadedModels.length === 0) return;
+function renderCustomModel(modelData) {
+    if (!modelData || !modelData.name) return;
 
-    const modelsSection = document.querySelector('.models-section');
-    if (!modelsSection) return;
+    // Find the existing models grid
+    const modelsGrid = document.querySelector('.models-grid');
+    if (!modelsGrid) return;
 
-    // Create "Your Models" section
-    let yourModelsSection = document.getElementById('your-models-section');
-
-    if (!yourModelsSection) {
-        yourModelsSection = document.createElement('section');
-        yourModelsSection.id = 'your-models-section';
-        yourModelsSection.className = 'models-section';
-        yourModelsSection.innerHTML = `
-            <h3 class="section-title">Your Uploaded Models</h3>
-            <div id="your-models-grid" class="models-grid"></div>
-        `;
-        // Insert before the existing models section
-        modelsSection.parentNode.insertBefore(yourModelsSection, modelsSection);
+    // Check if this model card already exists
+    const existingCard = document.getElementById('custom-model-card');
+    if (existingCard) {
+        existingCard.remove();
     }
 
-    const grid = document.getElementById('your-models-grid');
-    grid.innerHTML = '';
+    // Get reference to the first existing model card
+    const firstExistingCard = modelsGrid.querySelector('.model-card');
 
-    // Only show last 4 models
-    const modelsToShow = uploadedModels.slice(0, 4);
+    const card = document.createElement('a');
+    card.id = 'custom-model-card';
+    card.href = 'viewer.html?model=custom';
+    card.className = 'model-card glass-card';
 
-    modelsToShow.forEach((model, index) => {
-        const card = document.createElement('a');
-        card.href = `viewer.html?model=uploaded&id=${model.id}`;
-        card.className = 'model-card glass-card';
+    card.innerHTML = `
+        <div class="model-preview" style="display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); min-height: 120px; position: relative;">
+            <svg viewBox="0 0 24 24" fill="none" style="width: 48px; height: 48px; color: white;">
+                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span style="position: absolute; top: 8px; right: 8px; background: white; color: #22c55e; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">YOUR MODEL</span>
+        </div>
+        <div class="model-info">
+            <h4>${modelData.name}</h4>
+            <span class="view-link">View in AR →</span>
+        </div>
+    `;
 
-        const isLatest = index === 0;
+    // Insert at the beginning of the grid
+    if (firstExistingCard) {
+        modelsGrid.insertBefore(card, firstExistingCard);
+    } else {
+        modelsGrid.appendChild(card);
+    }
 
-        card.innerHTML = `
-            <div class="model-preview" style="display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 120px;">
-                <svg viewBox="0 0 24 24" fill="none" style="width: 48px; height: 48px; color: white;">
-                    <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </div>
-            <div class="model-info">
-                <h4>${model.name}${isLatest ? ' <span style="font-size: 0.7em; color: #22c55e;">★ Latest</span>' : ''}</h4>
-                <span class="view-link">View in AR →</span>
-            </div>
-        `;
-
-        // Add click handler to load from IndexedDB
-        card.addEventListener('click', (e) => {
-            e.preventDefault();
-            loadModelById(model.id);
-        });
-
-        grid.appendChild(card);
-    });
-
-    // Add animation
-    const cards = grid.querySelectorAll('.model-card');
-    cards.forEach((card, index) => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        setTimeout(() => {
-            card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-            card.style.opacity = '1';
-            card.style.transform = 'translateY(0)';
-        }, index * 100);
-    });
+    // Animate in
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(20px)';
+    setTimeout(() => {
+        card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+    }, 100);
 }
 
 /**

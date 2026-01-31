@@ -394,40 +394,37 @@ function storeModelInIndexedDB(blob, name) {
             if (!db.objectStoreNames.contains('models')) {
                 db.createObjectStore('models', { keyPath: 'id' });
             }
-            if (!db.objectStoreNames.contains('uploadedModels')) {
-                db.createObjectStore('uploadedModels', { keyPath: 'id' });
-            }
         };
 
         request.onsuccess = (event) => {
             const db = event.target.result;
-            const transaction = db.transaction(['models', 'uploadedModels'], 'readwrite');
+            const transaction = db.transaction(['models'], 'readwrite');
             const store = transaction.objectStore('models');
-            const uploadedStore = transaction.objectStore('uploadedModels');
 
-            const timestamp = Date.now();
-            const uniqueId = 'model_' + timestamp;
-
-            // Store as current custom model
-            const currentModelData = {
+            // Store as single custom model (overwrites previous)
+            const modelData = {
                 id: 'customModel',
                 name: name,
                 blob: blob,
-                timestamp: timestamp
+                timestamp: Date.now()
             };
 
-            // Also store in uploaded models list
-            const uploadedModelData = {
-                id: uniqueId,
-                name: name,
-                blob: blob,
-                timestamp: timestamp
+            console.log('Storing model in IndexedDB:', name, blob.size, 'bytes');
+
+            const putRequest = store.put(modelData);
+
+            putRequest.onsuccess = () => {
+                console.log('Model stored successfully');
             };
 
-            store.put(currentModelData);
-            uploadedStore.put(uploadedModelData);
+            putRequest.onerror = () => {
+                console.error('Failed to store model:', putRequest.error);
+            };
 
-            transaction.oncomplete = () => resolve(uniqueId);
+            transaction.oncomplete = () => {
+                console.log('Transaction complete');
+                resolve();
+            };
             transaction.onerror = () => reject(transaction.error);
         };
     });
