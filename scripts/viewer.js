@@ -63,18 +63,19 @@ function initElements() {
 function initModelFromURL() {
     const params = new URLSearchParams(window.location.search);
     const modelKey = params.get('model') || 'astronaut';
-    const modelId = params.get('id');
+    const srcUrl = params.get('src');
     const modelName = params.get('name');
 
-    // Handle custom model from converter
-    if (modelKey === 'custom') {
-        loadCustomModelFromDB(modelName);
+    // Handle direct URL to a GLB file (from GitHub)
+    if (srcUrl) {
+        console.log('Loading model from URL:', srcUrl);
+        loadModelFromUrl(srcUrl, modelName);
         return;
     }
 
-    // Handle uploaded model by ID
-    if (modelKey === 'uploaded' && modelId) {
-        loadUploadedModelById(modelId);
+    // Handle custom model from IndexedDB (local only)
+    if (modelKey === 'custom') {
+        loadCustomModelFromDB(modelName);
         return;
     }
 
@@ -83,6 +84,26 @@ function initModelFromURL() {
         loadModel(modelKey);
         updateActiveThumb(modelKey);
     }
+}
+
+/**
+ * Load model from a direct URL (GitHub-hosted)
+ */
+function loadModelFromUrl(url, name) {
+    console.log('Setting model-viewer src to:', url);
+
+    // Extract filename from URL for display
+    const filename = url.split('/').pop() || 'Custom Model';
+    const displayName = name || filename.replace('.glb', '');
+
+    modelViewer.setAttribute('src', url);
+    modelViewer.removeAttribute('poster');
+    modelViewer.removeAttribute('ios-src');
+
+    modelTitle.textContent = displayName;
+    modelDescription.textContent = 'Your custom 3D model. Tap "View in AR" to place it in your space.';
+
+    updateActiveThumb('custom');
 }
 
 /**

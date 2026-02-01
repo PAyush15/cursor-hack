@@ -53,8 +53,28 @@
                     <div class="qr-glow"></div>
                 </div>
                 <div class="qr-info">
-                    <h2>Scan to View in AR</h2>
-                    <p>Point your phone camera at the QR code</p>
+                    <h2 id="qr-title">Scan to View in AR</h2>
+                    <p id="qr-subtitle">Point your phone camera at the QR code</p>
+                </div>
+
+                <!-- Custom Model Input -->
+                <div class="custom-model-input"
+                    style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <label for="modelFilename"
+                        style="display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 0.9rem;">
+                        Enter your GLB filename (uploaded to models/ folder):
+                    </label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="modelFilename" placeholder="mymodel.glb"
+                            style="flex: 1; padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: white; font-size: 1rem;">
+                        <button type="button" id="generateQRBtn"
+                            style="padding: 10px 20px; background: var(--gradient-primary); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer;">
+                            Generate QR
+                        </button>
+                    </div>
+                    <p style="margin-top: 8px; font-size: 0.8rem; color: var(--text-tertiary);">
+                        Upload your GLB file to GitHub at: models/yourfile.glb
+                    </p>
                 </div>
             </div>
         </section>
