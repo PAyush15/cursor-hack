@@ -1,93 +1,92 @@
 /**
- * AR Viewer - AR.js Implementation
- * Handles marker-based AR with A-Frame
+ * AR Viewer - AR.js Implementation (Clean Geometry)
+ * Handles marker-based AR with simple, reliable 3D buttons
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    initARExperience();
+    initScene();
 });
 
-function initARExperience() {
-    const loader = document.querySelector('.arjs-loader');
-    const modelContainer = document.querySelector('#model-container');
-
-    // Hide loader when scene is loaded
-    const scene = document.querySelector('a-scene');
-    scene.addEventListener('loaded', () => {
-        console.log('AR Scene loaded');
-        if (loader) loader.style.display = 'none';
-    });
-
-    // Load Model from URL
+function initScene() {
+    // 1. Load Model
     const params = new URLSearchParams(window.location.search);
-    const srcUrl = params.get('src');
-    const modelUrl = srcUrl || 'https://modelviewer.dev/shared-assets/models/Astronaut.glb';
+    let modelSrc = params.get('src');
 
-    console.log('Loading model:', modelUrl);
+    // Fallback logic
+    if (!modelSrc) {
+        // Assume default structure if no param
+        modelSrc = 'models/model.glb';
+        console.log('No src param, defaulting to:', modelSrc);
+    }
 
-    // Create GLTF entity dynamically
-    const modelEntity = document.createElement('a-entity');
-    modelEntity.setAttribute('gltf-model', modelUrl);
-    modelEntity.setAttribute('scale', '0.5 0.5 0.5'); // Default scale, maybe adjusting based on model size is needed
-    modelEntity.setAttribute('position', '0 0.5 0'); // Slight offset from marker center
-    modelEntity.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear');
+    const modelEntity = document.querySelector('#ar-model');
+    if (modelEntity) {
+        // Use gltf-model component
+        modelEntity.setAttribute('gltf-model', modelSrc);
 
-    modelContainer.appendChild(modelEntity);
+        // Error handling for model loading
+        modelEntity.addEventListener('model-error', (e) => {
+            console.error('Model failed to load:', e);
+            alert('Error loading 3D model. Please check the file path.');
+        });
 
-    // Setup Interactions
-    setupButtons();
+        modelEntity.addEventListener('model-loaded', () => {
+            console.log('Model loaded successfully');
+        });
+    }
+
+    // 2. Setup Buttons
+    setupInteractions();
 }
 
-function setupButtons() {
-    // Website Button
+function setupInteractions() {
+    // Helper for hover effects
+    const addHoverEffect = (id) => {
+        const el = document.querySelector(id);
+        if (!el) return;
+
+        el.addEventListener('mouseenter', () => {
+            el.setAttribute('scale', '1.1 1.1 1.1');
+            // Change color of child plane if possible
+            const plane = el.querySelector('a-plane');
+            if (plane) plane.setAttribute('opacity', '1');
+        });
+
+        el.addEventListener('mouseleave', () => {
+            el.setAttribute('scale', '1 1 1');
+            const plane = el.querySelector('a-plane');
+            if (plane) plane.setAttribute('opacity', '0.9');
+        });
+    };
+
+    // WEBSITE
     const btnWebsite = document.querySelector('#btn-website');
     if (btnWebsite) {
+        addHoverEffect('#btn-website');
         btnWebsite.addEventListener('click', () => {
-            console.log('Website button clicked');
-            // In AR.js/A-Frame with cursor, touch events map to clicks
+            console.log('Website Clicked');
+            // Assuming this is the user's github or site
             window.open('https://github.com/PAyush15', '_blank');
         });
-
-        // Visual feedback
-        btnWebsite.addEventListener('mouseenter', () => {
-            btnWebsite.setAttribute('scale', '1.2 1.2 1.2');
-        });
-        btnWebsite.addEventListener('mouseleave', () => {
-            btnWebsite.setAttribute('scale', '1 1 1');
-        });
     }
 
-    // Video Button
+    // VIDEO
     const btnVideo = document.querySelector('#btn-video');
     if (btnVideo) {
+        addHoverEffect('#btn-video');
         btnVideo.addEventListener('click', () => {
-            console.log('Video button clicked');
-            alert('Video Playback Feature\n(Placeholder for video content)');
-        });
-
-        btnVideo.addEventListener('mouseenter', () => {
-            btnVideo.setAttribute('scale', '1.2 1.2 1.2');
-        });
-        btnVideo.addEventListener('mouseleave', () => {
-            btnVideo.setAttribute('scale', '1 1 1');
+            console.log('Video Clicked');
+            alert('Playing Video Content...');
         });
     }
 
-    // Info Button
+    // INFO
     const btnInfo = document.querySelector('#btn-info');
     if (btnInfo) {
+        addHoverEffect('#btn-info');
         btnInfo.addEventListener('click', () => {
-            console.log('Info button clicked');
-            const params = new URLSearchParams(window.location.search);
-            const modelName = params.get('src') ? params.get('src').split('/').pop() : 'Default Model';
-            alert(`AR Viewer Info:\nModel: ${modelName}\nTracking: Hiro Marker`);
-        });
-
-        btnInfo.addEventListener('mouseenter', () => {
-            btnInfo.setAttribute('scale', '1.2 1.2 1.2');
-        });
-        btnInfo.addEventListener('mouseleave', () => {
-            btnInfo.setAttribute('scale', '1 1 1');
+            console.log('Info Clicked');
+            alert('AR Viewer v2.0\nTracking: Hiro Marker\nEngine: A-Frame + AR.js');
         });
     }
 }
