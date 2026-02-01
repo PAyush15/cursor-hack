@@ -82,6 +82,14 @@
                 place in your space.</p>
 
             <div class="model-controls">
+                <button class="control-btn active" id="visibility-toggle" title="Show/Hide Model">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M1 12S5 5 12 5s11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" />
+                        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" />
+                    </svg>
+                    <span>Visible</span>
+                </button>
                 <button class="control-btn" id="rotate-toggle" title="Toggle auto-rotate">
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path
@@ -101,6 +109,20 @@
                             stroke-linejoin="round" />
                     </svg>
                     <span>Reset View</span>
+                </button>
+                <button class="control-btn" id="scale-up" title="Increase size">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" />
+                        <path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                    <span>Bigger</span>
+                </button>
+                <button class="control-btn" id="scale-down" title="Decrease size">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" />
+                        <path d="M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                    <span>Smaller</span>
                 </button>
             </div>
         </div>

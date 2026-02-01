@@ -142,6 +142,46 @@ function updateActiveThumb(activeKey) {
  * Initialize model controls
  */
 function initControls() {
+    const visibilityToggle = document.getElementById('visibility-toggle');
+    const scaleUp = document.getElementById('scale-up');
+    const scaleDown = document.getElementById('scale-down');
+
+    let isVisible = true;
+    let currentScale = 1;
+
+    // Visibility toggle - show/hide the model
+    if (visibilityToggle) {
+        visibilityToggle.addEventListener('click', () => {
+            isVisible = !isVisible;
+            if (isVisible) {
+                modelViewer.style.opacity = '1';
+                visibilityToggle.querySelector('span').textContent = 'Visible';
+                visibilityToggle.classList.add('active');
+            } else {
+                modelViewer.style.opacity = '0';
+                visibilityToggle.querySelector('span').textContent = 'Hidden';
+                visibilityToggle.classList.remove('active');
+            }
+        });
+    }
+
+    // Scale up - make model bigger
+    if (scaleUp) {
+        scaleUp.addEventListener('click', () => {
+            currentScale = Math.min(currentScale * 1.25, 3);
+            modelViewer.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`);
+        });
+    }
+
+    // Scale down - make model smaller
+    if (scaleDown) {
+        scaleDown.addEventListener('click', () => {
+            currentScale = Math.max(currentScale * 0.8, 0.25);
+            modelViewer.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`);
+        });
+    }
+
+    // Auto-rotate toggle
     if (rotateToggle) {
         let autoRotating = true;
         rotateToggle.addEventListener('click', () => {
@@ -155,10 +195,13 @@ function initControls() {
         });
     }
 
+    // Reset view
     if (resetView) {
         resetView.addEventListener('click', () => {
             modelViewer.resetTurntableRotation();
             modelViewer.jumpCameraToGoal();
+            currentScale = 1;
+            modelViewer.setAttribute('scale', '1 1 1');
         });
     }
 }
