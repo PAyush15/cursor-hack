@@ -4,8 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AR Viewer - Direct Launch</title>
-    <link rel="stylesheet" href="styles/main.css">
+    <title>AR Experience</title>
     <!-- Model Viewer Component -->
     <script type="importmap">
         {
@@ -25,10 +24,8 @@
             height: 100%;
             background: #000;
             overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: white;
         }
 
         #model-viewer {
@@ -37,81 +34,92 @@
             background-color: #000;
         }
 
-        /* Large Direct Launch Button */
-        .direct-ar-launch {
+        /* Permission / Launch Overlay */
+        .permission-request-ui {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             z-index: 2000;
-            background: radial-gradient(circle at center, #1a1a2e 0%, #0a0a0f 100%);
+            background: #000;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            transition: opacity 0.5s ease;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
-        .launch-icon {
-            width: 120px;
-            height: 120px;
-            background: var(--gradient-primary);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .permission-icon {
+            width: 80px;
+            height: 80px;
             margin-bottom: 24px;
-            box-shadow: 0 0 50px var(--accent-glow);
-            animation: pulse 2s infinite;
+            color: #6366f1;
+            animation: pulse-ring 2s infinite;
         }
 
-        @keyframes pulse {
+        @keyframes pulse-ring {
             0% {
-                transform: scale(1);
-                box-shadow: 0 0 20px var(--accent-glow);
+                transform: scale(0.95);
+                opacity: 0.8;
             }
 
             50% {
-                transform: scale(1.05);
-                box-shadow: 0 0 50px var(--accent-glow);
+                transform: scale(1.1);
+                opacity: 1;
             }
 
             100% {
-                transform: scale(1);
-                box-shadow: 0 0 20px var(--accent-glow);
+                transform: scale(0.95);
+                opacity: 0.8;
             }
         }
 
-        .launch-text {
-            color: white;
+        .permission-title {
             font-size: 1.5rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 2px;
+            font-weight: 600;
+            margin-bottom: 12px;
         }
 
-        .launch-subtext {
-            color: rgba(255, 255, 255, 0.5);
-            margin-top: 12px;
-            font-size: 0.9rem;
+        .permission-desc {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 32px;
+            max-width: 300px;
         }
 
-        /* Hidden standard AR button - we trigger it manually */
-        .ar-button {
-            display: none !important;
+        .start-camera-btn {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+            transition: transform 0.2s ease;
         }
 
-        /* Floating AR Controls */
+        .start-camera-btn:active {
+            transform: scale(0.96);
+        }
+
+        /* Floating AR Interactive Buttons */
         .ar-controls {
             position: fixed;
-            bottom: 40px;
-            left: 50%;
-            transform: translateX(-50%);
+            bottom: 50px;
+            left: 0;
+            width: 100%;
             display: none;
-            gap: 20px;
+            /* Shown via JS upon AR entry */
+            justify-content: center;
+            gap: 40px;
             z-index: 1000;
+            pointer-events: none;
+            /* Let clicks pass through around buttons */
         }
 
         :where(model-viewer)[ar-status="object-placed"]~.ar-controls,
@@ -119,75 +127,87 @@
             display: flex;
         }
 
-        .ar-control-btn {
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 60px;
-            padding: 16px 32px;
+        .big-ar-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             display: flex;
             align-items: center;
-            gap: 15px;
-            color: white;
-            font-weight: 700;
-            font-size: 1.2rem;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            pointer-events: auto;
             cursor: pointer;
-            white-space: nowrap;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .ar-control-btn svg {
-            width: 28px;
-            height: 28px;
+        .big-ar-btn:active {
+            transform: scale(0.9);
         }
 
-        .ar-control-btn.active {
+        .big-ar-btn svg {
+            width: 40px;
+            height: 40px;
+            color: #000;
+        }
+
+        .big-ar-btn.active {
             background: #6366f1;
-            border-color: #8b5cf6;
+        }
+
+        .big-ar-btn.active svg {
+            color: white;
+        }
+
+        /* Hiding default AR button slot since we trigger manually */
+        .ar-button {
+            display: none;
         }
     </style>
 </head>
 
 <body>
-    <!-- Direct Launch Overlay -->
-    <div id="launch-overlay" class="direct-ar-launch">
-        <div class="launch-icon">
-            <svg viewBox="0 0 24 24" fill="none" style="width: 60px; height: 60px; color: white;">
-                <path d="M7 7H4C2.89543 7 2 7.89543 2 9V20C2 21.1046 2.89543 22 4 22H15C16.1046 22 17 21.1046 17 20V17"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                <rect x="9" y="2" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2" />
-                <circle cx="15.5" cy="8.5" r="2.5" stroke="currentColor" stroke-width="2" />
+
+    <!-- Permission / Start Overlay -->
+    <div id="permission-overlay" class="permission-request-ui">
+        <div class="permission-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                <circle cx="12" cy="13" r="4"></circle>
             </svg>
         </div>
-        <div class="launch-text">Tap to Enter AR</div>
-        <div class="launch-subtext">Optimizing 3D Model...</div>
+        <div class="permission-title">Camera Access Required</div>
+        <div class="permission-desc">Tap below to allow camera access and place the object in your space.</div>
+        <button id="start-ar-btn" class="start-camera-btn">Enable Camera & Start AR</button>
     </div>
 
-    <!-- Hidden Model Viewer -->
-    <model-viewer id="model-viewer" src="" ar ar-modes="webxr scene-viewer quick-look" ar-scale="auto" camera-controls
-        touch-action="none" environment-image="neutral" exposure="1" shadow-intensity="1" auto-rotate loading="eager">
+    <!-- Model Viewer -->
+    <model-viewer id="model-viewer" src="" ar ar-modes="webxr scene-viewer quick-look" camera-controls
+        touch-action="none" environment-image="neutral" exposure="1" shadow-intensity="1" loading="eager">
     </model-viewer>
 
-    <!-- Floating AR Controls -->
+    <!-- Floating Interactive Buttons -->
     <div class="ar-controls" id="ar-controls">
-        <button class="ar-control-btn active" id="ar-rotate-btn">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path
-                    d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C14.8273 3 17.35 4.30367 19 6.34267"
-                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
-                <path d="M21 3V7H17" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                    stroke-linejoin="round" />
+        <!-- Question Mark Button -->
+        <button class="big-ar-btn" id="btn-question" aria-label="Help">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
             </svg>
-            <span>Rotate</span>
         </button>
-        <button class="ar-control-btn" id="ar-hide-btn">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M1 12S5 5 12 5s11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" stroke-width="2.5"
-                    stroke-linecap="round" stroke-linejoin="round" />
-                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2.5" />
+
+        <!-- Info Button -->
+        <button class="big-ar-btn" id="btn-info" aria-label="Information">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
             </svg>
-            <span>Show</span>
         </button>
     </div>
 

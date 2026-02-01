@@ -1,107 +1,100 @@
 /**
- * AR Viewer - Direct-to-AR Script
- * Optimized for one-tap AR entry and interactive controls
+ * AR Viewer - Seamless Permission Flow
+ * Handles "Scan -> Permission -> AR" flow and interactive buttons
  */
 
 let modelViewer;
-let launchOverlay;
-let arHideBtn;
-let arRotateBtn;
-let isVisible = true;
-let isRotating = true;
+let permissionOverlay;
+let startArBtn;
+let btnQuestion;
+let btnInfo;
 
 document.addEventListener('DOMContentLoaded', () => {
     initElements();
     initModelFromURL();
+    initInteractions();
     initARHandlers();
 });
 
 function initElements() {
     modelViewer = document.getElementById('model-viewer');
-    launchOverlay = document.getElementById('launch-overlay');
-    arHideBtn = document.getElementById('ar-hide-btn');
-    arRotateBtn = document.getElementById('ar-rotate-btn');
-
-    // Launch AR on overlay click
-    if (launchOverlay) {
-        launchOverlay.addEventListener('click', () => {
-            console.log('User-triggered AR activation');
-            modelViewer.activateAR();
-        });
-    }
-
-    // AR Visibility Toggle
-    if (arHideBtn) {
-        arHideBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            isVisible = !isVisible;
-            modelViewer.style.opacity = isVisible ? '1' : '0';
-            arHideBtn.querySelector('span').textContent = isVisible ? 'Show' : 'Hide';
-            arHideBtn.classList.toggle('active', !isVisible);
-        });
-    }
-
-    // AR Rotation Toggle
-    if (arRotateBtn) {
-        arRotateBtn.classList.add('active'); // Default starting state
-        arRotateBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            isRotating = !isRotating;
-            if (isRotating) {
-                modelViewer.setAttribute('auto-rotate', '');
-                arRotateBtn.classList.add('active');
-            } else {
-                modelViewer.removeAttribute('auto-rotate');
-                arRotateBtn.classList.remove('active');
-            }
-        });
-    }
+    permissionOverlay = document.getElementById('permission-overlay');
+    startArBtn = document.getElementById('start-ar-btn');
+    btnQuestion = document.getElementById('btn-question');
+    btnInfo = document.getElementById('btn-info');
 }
 
 function initModelFromURL() {
     const params = new URLSearchParams(window.location.search);
     const srcUrl = params.get('src');
 
-    // Default model if no src provided
+    // Default model if no src provided (fallback)
     const modelToLoad = srcUrl || 'https://modelviewer.dev/shared-assets/models/Astronaut.glb';
 
-    console.log('Loading model for AR:', modelToLoad);
+    console.log('Setting up AR model:', modelToLoad);
     modelViewer.setAttribute('src', modelToLoad);
+}
 
-    // If source is specified, try to hide overlay automatically when loaded
-    // (Though most browsers still need the click)
-    modelViewer.addEventListener('load', () => {
-        console.log('Model loaded and ready for AR');
-        const launchText = document.querySelector('.launch-text');
-        if (launchText) launchText.textContent = 'Ready! Tap to Start';
-        const launchSubtext = document.querySelector('.launch-subtext');
-        if (launchSubtext) launchSubtext.style.display = 'none';
-    });
+function initInteractions() {
+    // 1. Permission / Start Button -> Launch AR
+    if (startArBtn) {
+        startArBtn.addEventListener('click', () => {
+            console.log('Requesting AR Session...');
+            // This tap satisfies the browser's user gesture requirement
+            modelViewer.activateAR();
+        });
+    }
+
+    // 2. Interactive Button: Question Mark
+    if (btnQuestion) {
+        btnQuestion.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent clicks passing through to AR scene
+            toggleButtonState(btnQuestion);
+            console.log('Question button clicked');
+            // Future feature: Show help overlay
+        });
+    }
+
+    // 3. Interactive Button: Info
+    if (btnInfo) {
+        btnInfo.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleButtonState(btnInfo);
+            console.log('Info button clicked');
+            // Future feature: Show model info card
+        });
+    }
+}
+
+function toggleButtonState(btn) {
+    // Simple visual feedback for "interaction"
+    btn.classList.toggle('active');
+
+    // Reset after a short delay to simulate a click/action
+    setTimeout(() => {
+        btn.classList.remove('active');
+    }, 200);
 }
 
 function initARHandlers() {
-    // Detect when AR session starts
+    // Hide the permission overlay as soon as the session starts
     modelViewer.addEventListener('ar-status', (event) => {
         console.log('AR Status:', event.detail.status);
+
         if (event.detail.status === 'session-started') {
-            if (launchOverlay) launchOverlay.style.opacity = '0';
-            setTimeout(() => {
-                if (launchOverlay) launchOverlay.style.display = 'none';
-            }, 500);
+            permissionOverlay.style.display = 'none';
         } else if (event.detail.status === 'not-presenting') {
-            // If user exits AR, show overlay again or redirect back?
-            if (launchOverlay) {
-                launchOverlay.style.display = 'flex';
-                launchOverlay.style.opacity = '1';
-                const launchText = document.querySelector('.launch-text');
-                if (launchText) launchText.textContent = 'Enter AR Again';
-            }
+            // User exited AR - show permission screen again to allow re-entry
+            permissionOverlay.style.display = 'flex';
         }
     });
 
-    // Error handling
     modelViewer.addEventListener('error', (e) => {
-        console.error('Model Viewer Error:', e);
-        alert('Failed to load 3D model. Please check the file URL.');
+        console.error('AR Error:', e);
+        // If error, update UI to show message
+        const title = document.querySelector('.permission-title');
+        const desc = document.querySelector('.permission-desc');
+        if (title) title.textContent = 'Error Loading Model';
+        if (desc) desc.textContent = 'Please check your internet connection or the file validity.';
     });
 }
