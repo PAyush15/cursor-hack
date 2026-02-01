@@ -143,29 +143,56 @@ function updateActiveThumb(activeKey) {
  */
 function initControls() {
     const visibilityToggle = document.getElementById('visibility-toggle');
+    const arHideBtn = document.getElementById('ar-hide-btn');
+    const rotateToggle = document.getElementById('rotate-toggle');
+    const arRotateBtn = document.getElementById('ar-rotate-btn');
     const scaleUp = document.getElementById('scale-up');
     const scaleDown = document.getElementById('scale-down');
 
     let isVisible = true;
     let currentScale = 1;
 
-    // Visibility toggle - show/hide the model
-    if (visibilityToggle) {
-        visibilityToggle.addEventListener('click', () => {
-            isVisible = !isVisible;
-            if (isVisible) {
-                modelViewer.style.opacity = '1';
-                visibilityToggle.querySelector('span').textContent = 'Visible';
-                visibilityToggle.classList.add('active');
-            } else {
-                modelViewer.style.opacity = '0';
-                visibilityToggle.querySelector('span').textContent = 'Hidden';
-                visibilityToggle.classList.remove('active');
-            }
-        });
+    // Visibility toggle handler
+    const toggleVisibility = () => {
+        isVisible = !isVisible;
+        const opacity = isVisible ? '1' : '0';
+        modelViewer.style.opacity = opacity;
+
+        if (visibilityToggle) {
+            visibilityToggle.querySelector('span').textContent = isVisible ? 'Visible' : 'Hidden';
+            visibilityToggle.classList.toggle('active', isVisible);
+        }
+
+        if (arHideBtn) {
+            arHideBtn.querySelector('span').textContent = isVisible ? 'Show' : 'Hide';
+            arHideBtn.classList.toggle('active', !isVisible);
+        }
+    };
+
+    // Rotation toggle handler
+    const toggleRotation = () => {
+        let autoRotating = modelViewer.hasAttribute('auto-rotate');
+        if (autoRotating) {
+            modelViewer.removeAttribute('auto-rotate');
+        } else {
+            modelViewer.setAttribute('auto-rotate', '');
+        }
+
+        const newState = !autoRotating;
+        if (rotateToggle) rotateToggle.classList.toggle('active', newState);
+        if (arRotateBtn) arRotateBtn.classList.toggle('active', newState);
+    };
+
+    if (visibilityToggle) visibilityToggle.addEventListener('click', toggleVisibility);
+    if (arHideBtn) arHideBtn.addEventListener('click', toggleVisibility);
+
+    if (rotateToggle) rotateToggle.addEventListener('click', toggleRotation);
+    if (arRotateBtn) {
+        arRotateBtn.classList.add('active'); // Start active
+        arRotateBtn.addEventListener('click', toggleRotation);
     }
 
-    // Scale up - make model bigger
+    // Scale handlers
     if (scaleUp) {
         scaleUp.addEventListener('click', () => {
             currentScale = Math.min(currentScale * 1.25, 3);
@@ -173,25 +200,10 @@ function initControls() {
         });
     }
 
-    // Scale down - make model smaller
     if (scaleDown) {
         scaleDown.addEventListener('click', () => {
             currentScale = Math.max(currentScale * 0.8, 0.25);
             modelViewer.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`);
-        });
-    }
-
-    // Auto-rotate toggle
-    if (rotateToggle) {
-        let autoRotating = true;
-        rotateToggle.addEventListener('click', () => {
-            autoRotating = !autoRotating;
-            if (autoRotating) {
-                modelViewer.setAttribute('auto-rotate', '');
-            } else {
-                modelViewer.removeAttribute('auto-rotate');
-            }
-            rotateToggle.classList.toggle('active', autoRotating);
         });
     }
 
@@ -202,8 +214,21 @@ function initControls() {
             modelViewer.jumpCameraToGoal();
             currentScale = 1;
             modelViewer.setAttribute('scale', '1 1 1');
+            if (!isVisible) toggleVisibility();
+            if (!modelViewer.hasAttribute('auto-rotate')) toggleRotation();
         });
     }
+
+    // Auto-launch AR when model is loaded if requested
+    modelViewer.addEventListener('load', () => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('ar') === 'true' || params.get('src')) {
+            console.log('Auto-launching AR...');
+            setTimeout(() => {
+                modelViewer.activateAR();
+            }, 1000);
+        }
+    });
 }
 
 /**

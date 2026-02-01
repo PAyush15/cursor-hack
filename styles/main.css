@@ -844,6 +844,80 @@ model-viewer {
 }
 
 /* ====================================
+   Floating AR Controls
+   ==================================== */
+.ar-controls {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+    /* Hidden by default, shown in AR mode */
+    gap: 20px;
+    z-index: 1000;
+    width: auto;
+    max-width: 90%;
+}
+
+/* Show buttons when AR session is active */
+:where(model-viewer)[ar-status="object-placed"]~.ar-controls,
+:where(model-viewer)[ar-status="session-started"]~.ar-controls {
+    display: flex;
+}
+
+.ar-control-btn {
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50px;
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: white;
+    font-weight: 600;
+    font-size: 1.1rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.ar-control-btn svg {
+    width: 24px;
+    height: 24px;
+}
+
+.ar-control-btn:active {
+    transform: translateX(-50%) scale(0.95);
+}
+
+.ar-control-btn.active {
+    background: var(--gradient-primary);
+    border-color: transparent;
+    box-shadow: 0 0 25px var(--accent-glow);
+}
+
+/* Specific styling for the big buttons user requested */
+#ar-rotate-btn,
+#ar-hide-btn {
+    min-width: 140px;
+    justify-content: center;
+}
+
+/* Hide other UI elements in AR to prevent clutter */
+:where(model-viewer)[ar-status="object-placed"]~.viewer-header,
+:where(model-viewer)[ar-status="session-started"]~.viewer-header,
+:where(model-viewer)[ar-status="object-placed"]~.model-details,
+:where(model-viewer)[ar-status="session-started"]~.model-details {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+
+/* ====================================
    Converter Page Styles
    ==================================== */
 .converter-page {

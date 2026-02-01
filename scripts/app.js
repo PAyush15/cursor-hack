@@ -34,7 +34,7 @@ function initQRCode() {
 
     const baseUrl = getBaseUrl();
     const modelUrl = `${baseUrl}/models/${MODEL_FILENAME}`;
-    const viewerUrl = `${baseUrl}/viewer.html?src=${encodeURIComponent(modelUrl)}`;
+    const viewerUrl = `${baseUrl}/viewer.html?src=${encodeURIComponent(modelUrl)}&ar=true`;
 
     console.log('QR Code URL:', viewerUrl);
 
