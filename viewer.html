@@ -25,144 +25,145 @@
             background: #000;
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            -webkit-font-smoothing: antialiased;
+            color: white;
         }
 
         #model-viewer {
             width: 100%;
             height: 100%;
-            background-color: #111;
-            /* Slightly lighter than black to show transparency */
-            --poster-color: transparent;
+            background-color: #000;
         }
 
-        /* Permission / Start Overlay */
+        /* Permission / Launch Overlay */
         .permission-request-ui {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 5000;
-            background: linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, #000 100%);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            z-index: 2000;
+            background: #000;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: 24px;
+            padding: 20px;
             box-sizing: border-box;
-            transition: opacity 0.3s ease;
-        }
-
-        .permission-card {
-            background: rgba(20, 20, 30, 0.9);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
-            padding: 40px 24px;
-            width: 100%;
-            max-width: 320px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
         }
 
         .permission-icon {
-            width: 64px;
-            height: 64px;
+            width: 80px;
+            height: 80px;
             margin-bottom: 24px;
-            color: #fff;
-            background: #6366f1;
-            padding: 16px;
-            border-radius: 50%;
-            box-shadow: 0 0 30px rgba(99, 102, 241, 0.4);
+            color: #6366f1;
+            animation: pulse-ring 2s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.95);
+                opacity: 0.8;
+            }
+
+            50% {
+                transform: scale(1.1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(0.95);
+                opacity: 0.8;
+            }
         }
 
         .permission-title {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: white;
+            font-size: 1.5rem;
+            font-weight: 600;
             margin-bottom: 12px;
-            letter-spacing: -0.5px;
         }
 
         .permission-desc {
-            font-size: 0.95rem;
-            color: rgba(255, 255, 255, 0.6);
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.7);
             margin-bottom: 32px;
-            line-height: 1.5;
+            max-width: 300px;
         }
 
         .start-camera-btn {
-            background: white;
-            color: black;
+            background: #6366f1;
+            color: white;
             border: none;
-            width: 100%;
-            padding: 16px;
-            border-radius: 16px;
-            font-size: 1rem;
-            font-weight: 700;
+            padding: 16px 32px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s ease, background 0.2s ease;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+            transition: transform 0.2s ease;
         }
 
         .start-camera-btn:active {
             transform: scale(0.96);
-            background: #e0e0e0;
         }
 
         /* Floating AR Interactive Buttons */
         .ar-controls {
             position: fixed;
-            bottom: 40px;
+            bottom: 50px;
             left: 0;
             width: 100%;
-            display: flex;
+            display: none;
+            /* Shown via JS upon AR entry */
             justify-content: center;
-            gap: 24px;
-            z-index: 6000;
+            gap: 40px;
+            z-index: 1000;
             pointer-events: none;
-            padding-bottom: env(safe-area-inset-bottom);
+            /* Let clicks pass through around buttons */
         }
 
-        /* Buttons Style */
+        :where(model-viewer)[ar-status="object-placed"]~.ar-controls,
+        :where(model-viewer)[ar-status="session-started"]~.ar-controls {
+            display: flex;
+        }
+
         .big-ar-btn {
-            width: 64px;
-            height: 64px;
+            width: 80px;
+            height: 80px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             display: flex;
             align-items: center;
             justify-content: center;
             pointer-events: auto;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             -webkit-tap-highlight-color: transparent;
         }
 
         .big-ar-btn:active {
             transform: scale(0.9);
-            background: rgba(255, 255, 255, 0.3);
         }
 
         .big-ar-btn svg {
-            width: 32px;
-            height: 32px;
-            color: white;
-            stroke-width: 2px;
+            width: 40px;
+            height: 40px;
+            color: #000;
         }
 
-        /* Question Mark & Info specific colors/styles if needed, currently uniform modern glass */
+        .big-ar-btn.active {
+            background: #6366f1;
+        }
 
-        /* Hiding default AR button slot */
+        .big-ar-btn.active svg {
+            color: white;
+        }
+
+        /* Hiding default AR button slot since we trigger manually */
         .ar-button {
-            display: none !important;
+            display: none;
         }
     </style>
 </head>
@@ -171,31 +172,28 @@
 
     <!-- Permission / Start Overlay -->
     <div id="permission-overlay" class="permission-request-ui">
-        <div class="permission-card">
-            <div class="permission-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                    <circle cx="12" cy="13" r="4"></circle>
-                </svg>
-            </div>
-            <div class="permission-title">Enable Camera</div>
-            <div class="permission-desc">Access to your camera is required to display the 3D model in your environment.
-            </div>
-            <button id="start-ar-btn" class="start-camera-btn">Allow Access</button>
+        <div class="permission-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                <circle cx="12" cy="13" r="4"></circle>
+            </svg>
         </div>
+        <div class="permission-title">Camera Access Required</div>
+        <div class="permission-desc">Tap below to allow camera access and place the object in your space.</div>
+        <button id="start-ar-btn" class="start-camera-btn">Enable Camera & Start AR</button>
     </div>
 
     <!-- Model Viewer -->
     <model-viewer id="model-viewer" src="" ar ar-modes="webxr scene-viewer quick-look" camera-controls
-        touch-action="none" shadow-intensity="1" environment-image="neutral" exposure="1" loading="eager" autoplay
-        auto-rotate>
+        touch-action="none" environment-image="neutral" exposure="1" shadow-intensity="1" loading="eager">
     </model-viewer>
 
     <!-- Floating Interactive Buttons -->
     <div class="ar-controls" id="ar-controls">
         <!-- Question Mark Button -->
         <button class="big-ar-btn" id="btn-question" aria-label="Help">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
                 <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
                 <line x1="12" y1="17" x2="12.01" y2="17"></line>
@@ -204,7 +202,8 @@
 
         <!-- Info Button -->
         <button class="big-ar-btn" id="btn-info" aria-label="Information">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
                 <line x1="12" y1="16" x2="12" y2="12"></line>
                 <line x1="12" y1="8" x2="12.01" y2="8"></line>

@@ -1,5 +1,6 @@
 /**
- * AR Viewer - Interaction & Permission Logic
+ * AR Viewer - Seamless Permission Flow
+ * Handles "Scan -> Permission -> AR" flow and interactive buttons
  */
 
 let modelViewer;
@@ -27,70 +28,73 @@ function initModelFromURL() {
     const params = new URLSearchParams(window.location.search);
     const srcUrl = params.get('src');
 
-    // Default model fallback
+    // Default model if no src provided (fallback)
     const modelToLoad = srcUrl || 'https://modelviewer.dev/shared-assets/models/Astronaut.glb';
 
-    console.log('Loading model:', modelToLoad);
+    console.log('Setting up AR model:', modelToLoad);
     modelViewer.setAttribute('src', modelToLoad);
 }
 
 function initInteractions() {
-    // 1. Permission Button -> Activate AR
+    // 1. Permission / Start Button -> Launch AR
     if (startArBtn) {
         startArBtn.addEventListener('click', () => {
-            console.log('User granted permission. Activating AR...');
-            // This direct user action allows the browser to enter AR/WebXR
+            console.log('Requesting AR Session...');
+            // This tap satisfies the browser's user gesture requirement
             modelViewer.activateAR();
         });
     }
 
-    // 2. Question Button Logic
+    // 2. Interactive Button: Question Mark
     if (btnQuestion) {
         btnQuestion.addEventListener('click', (e) => {
-            e.stopPropagation();
-            animateButton(btnQuestion);
-            alert('Help: Point your camera at a flat surface to place the model. Drag to rotate, pinch to scale.');
+            e.stopPropagation(); // Prevent clicks passing through to AR scene
+            toggleButtonState(btnQuestion);
+            console.log('Question button clicked');
+            // Future feature: Show help overlay
         });
     }
 
-    // 3. Info Button Logic
+    // 3. Interactive Button: Info
     if (btnInfo) {
         btnInfo.addEventListener('click', (e) => {
             e.stopPropagation();
-            animateButton(btnInfo);
-            // Example info - in a real app this could show a modal
-            const modelName = modelViewer.src.split('/').pop();
-            alert(`Model Information:\nFilename: ${modelName}\nLighting: Neutral Studio`);
+            toggleButtonState(btnInfo);
+            console.log('Info button clicked');
+            // Future feature: Show model info card
         });
     }
 }
 
-function animateButton(btn) {
-    btn.style.transform = 'scale(0.9)';
+function toggleButtonState(btn) {
+    // Simple visual feedback for "interaction"
+    btn.classList.toggle('active');
+
+    // Reset after a short delay to simulate a click/action
     setTimeout(() => {
-        btn.style.transform = 'scale(1)';
-    }, 150);
+        btn.classList.remove('active');
+    }, 200);
 }
 
 function initARHandlers() {
-    // When AR session starts, hide the permission overlay
+    // Hide the permission overlay as soon as the session starts
     modelViewer.addEventListener('ar-status', (event) => {
-        console.log('AR Status Change:', event.detail.status);
+        console.log('AR Status:', event.detail.status);
 
-        if (event.detail.status === 'session-started' || event.detail.status === 'object-placed') {
-            permissionOverlay.style.border = 'none'; // Visual cleanup
+        if (event.detail.status === 'session-started') {
             permissionOverlay.style.display = 'none';
         } else if (event.detail.status === 'not-presenting') {
-            // User exited AR -> Show permission screen again
+            // User exited AR - show permission screen again to allow re-entry
             permissionOverlay.style.display = 'flex';
         }
     });
 
     modelViewer.addEventListener('error', (e) => {
-        console.error('Model loading error:', e);
+        console.error('AR Error:', e);
+        // If error, update UI to show message
         const title = document.querySelector('.permission-title');
-        if (title) title.textContent = 'Error Loading Model';
         const desc = document.querySelector('.permission-desc');
-        if (desc) desc.textContent = 'Unable to display the 3D model. Please verify the URL.';
+        if (title) title.textContent = 'Error Loading Model';
+        if (desc) desc.textContent = 'Please check your internet connection or the file validity.';
     });
 }
