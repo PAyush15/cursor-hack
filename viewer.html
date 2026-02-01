@@ -3,202 +3,193 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="View and interact with 3D models in Augmented Reality">
-    <title>AR Viewer - 3D Model</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>AR Viewer - Direct Launch</title>
     <link rel="stylesheet" href="styles/main.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
     <!-- Model Viewer Component -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        #model-viewer {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+
+        /* Large Direct Launch Button */
+        .direct-ar-launch {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2000;
+            background: radial-gradient(circle at center, #1a1a2e 0%, #0a0a0f 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: opacity 0.5s ease;
+        }
+
+        .launch-icon {
+            width: 120px;
+            height: 120px;
+            background: var(--gradient-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            box-shadow: 0 0 50px var(--accent-glow);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 20px var(--accent-glow);
+            }
+
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 50px var(--accent-glow);
+            }
+
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 20px var(--accent-glow);
+            }
+        }
+
+        .launch-text {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .launch-subtext {
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 12px;
+            font-size: 0.9rem;
+        }
+
+        /* Hidden standard AR button - we trigger it manually */
+        .ar-button {
+            display: none !important;
+        }
+
+        /* Floating AR Controls */
+        .ar-controls {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            gap: 20px;
+            z-index: 1000;
+        }
+
+        :where(model-viewer)[ar-status="object-placed"]~.ar-controls,
+        :where(model-viewer)[ar-status="session-started"]~.ar-controls {
+            display: flex;
+        }
+
+        .ar-control-btn {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 60px;
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .ar-control-btn svg {
+            width: 28px;
+            height: 28px;
+        }
+
+        .ar-control-btn.active {
+            background: #6366f1;
+            border-color: #8b5cf6;
+        }
+    </style>
 </head>
 
-<body class="viewer-page">
-    <!-- Animated Background -->
-    <div class="background-animation">
-        <div class="orb orb-1"></div>
-        <div class="orb orb-2"></div>
+<body>
+    <!-- Direct Launch Overlay -->
+    <div id="launch-overlay" class="direct-ar-launch">
+        <div class="launch-icon">
+            <svg viewBox="0 0 24 24" fill="none" style="width: 60px; height: 60px; color: white;">
+                <path d="M7 7H4C2.89543 7 2 7.89543 2 9V20C2 21.1046 2.89543 22 4 22H15C16.1046 22 17 21.1046 17 20V17"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                <rect x="9" y="2" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2" />
+                <circle cx="15.5" cy="8.5" r="2.5" stroke="currentColor" stroke-width="2" />
+            </svg>
+        </div>
+        <div class="launch-text">Tap to Enter AR</div>
+        <div class="launch-subtext">Optimizing 3D Model...</div>
     </div>
 
-    <header class="viewer-header">
-        <a href="index.html" class="back-link">
+    <!-- Hidden Model Viewer -->
+    <model-viewer id="model-viewer" src="" ar ar-modes="webxr scene-viewer quick-look" ar-scale="auto" camera-controls
+        touch-action="none" environment-image="neutral" exposure="1" shadow-intensity="1" auto-rotate loading="eager">
+    </model-viewer>
+
+    <!-- Floating AR Controls -->
+    <div class="ar-controls" id="ar-controls">
+        <button class="ar-control-btn active" id="ar-rotate-btn">
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                <path
+                    d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C14.8273 3 17.35 4.30367 19 6.34267"
+                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+                <path d="M21 3V7H17" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
                     stroke-linejoin="round" />
             </svg>
-            Back
-        </a>
-        <div class="logo-small">
-            <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round" />
-                <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round" />
-                <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round" />
+            <span>Rotate</span>
+        </button>
+        <button class="ar-control-btn" id="ar-hide-btn">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M1 12S5 5 12 5s11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round" />
+                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2.5" />
             </svg>
-            <span>AR Viewer</span>
-        </div>
-    </header>
-
-    <main class="viewer-container">
-        <div class="model-viewer-wrapper glass-card">
-            <model-viewer id="model-viewer" src="https://modelviewer.dev/shared-assets/models/Astronaut.glb"
-                ios-src="https://modelviewer.dev/shared-assets/models/Astronaut.usdz"
-                poster="https://modelviewer.dev/shared-assets/models/Astronaut.png" alt="A 3D model"
-                shadow-intensity="1" camera-controls touch-action="pan-y" auto-rotate ar
-                ar-modes="webxr scene-viewer quick-look" ar-scale="auto" loading="eager">
-                <!-- Loading indicator -->
-                <div class="loading-overlay" slot="poster">
-                    <div class="spinner"></div>
-                    <p>Loading 3D Model...</p>
-                </div>
-
-                <!-- AR Button -->
-                <button slot="ar-button" class="ar-button">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M7 7H4C2.89543 7 2 7.89543 2 9V20C2 21.1046 2.89543 22 4 22H15C16.1046 22 17 21.1046 17 20V17"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                        <rect x="9" y="2" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2" />
-                        <circle cx="15.5" cy="8.5" r="2.5" stroke="currentColor" stroke-width="2" />
-                    </svg>
-                    View in AR
-                </button>
-
-                <!-- Progress bar -->
-                <div class="progress-bar" slot="progress-bar">
-                    <div class="update-bar"></div>
-                </div>
-            </model-viewer>
-
-            <!-- Floating AR Controls (appear in AR mode) -->
-            <div class="ar-controls" id="ar-controls">
-                <button class="ar-control-btn" id="ar-rotate-btn" title="Toggle Rotation">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C14.8273 3 17.35 4.30367 19 6.34267"
-                            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
-                        <path d="M21 3V7H17" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                            stroke-linejoin="round" />
-                    </svg>
-                    <span>Rotate</span>
-                </button>
-                <button class="ar-control-btn" id="ar-hide-btn" title="Hide/Show Model">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M1 12S5 5 12 5s11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" stroke-width="2.5"
-                            stroke-linecap="round" stroke-linejoin="round" />
-                        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2.5" />
-                    </svg>
-                    <span>Show</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- Model Info -->
-        <div class="model-details glass-card">
-            <h1 id="model-title">Astronaut</h1>
-            <p id="model-description">Interactive 3D model. Use touch or mouse to rotate and zoom. Tap "View in AR" to
-                place in your space.</p>
-
-            <div class="model-controls">
-                <button class="control-btn active" id="visibility-toggle" title="Show/Hide Model">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M1 12S5 5 12 5s11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" />
-                        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" />
-                    </svg>
-                    <span>Visible</span>
-                </button>
-                <button class="control-btn" id="rotate-toggle" title="Toggle auto-rotate">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C14.8273 3 17.35 4.30367 19 6.34267"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                        <path d="M21 3V7H17" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                            stroke-linejoin="round" />
-                    </svg>
-                    <span>Auto Rotate</span>
-                </button>
-                <button class="control-btn" id="reset-view" title="Reset camera view">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21C9.17273 21 6.65 19.6963 5 17.6573"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                        <path d="M3 21V17H7" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                            stroke-linejoin="round" />
-                    </svg>
-                    <span>Reset View</span>
-                </button>
-                <button class="control-btn" id="scale-up" title="Increase size">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" />
-                        <path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                    </svg>
-                    <span>Bigger</span>
-                </button>
-                <button class="control-btn" id="scale-down" title="Decrease size">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" />
-                        <path d="M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                    </svg>
-                    <span>Smaller</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- Model Selector -->
-        <div class="model-selector glass-card">
-            <h3>Choose a Model</h3>
-            <div class="model-thumbnails">
-                <button class="model-thumb active" data-model="astronaut">
-                    <img src="https://modelviewer.dev/shared-assets/models/Astronaut.png" alt="Astronaut">
-                    <span>Astronaut</span>
-                </button>
-                <button class="model-thumb" data-model="robot">
-                    <img src="https://modelviewer.dev/assets/poster-shishkebab.png" alt="Shish Kebab">
-                    <span>Shish Kebab</span>
-                </button>
-                <button class="model-thumb" data-model="chair">
-                    <img src="https://modelviewer.dev/assets/poster-chair.webp" alt="Chair">
-                    <span>Chair</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- AR Instructions (shown on mobile) -->
-        <div class="ar-instructions glass-card" id="ar-instructions">
-            <div class="instruction-icon">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
-                    <path d="M12 16V12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                    <circle cx="12" cy="8" r="1" fill="currentColor" />
-                </svg>
-            </div>
-            <div class="instruction-text">
-                <h4>Ready for AR!</h4>
-                <p>Tap the "View in AR" button above to place this model in your environment.</p>
-            </div>
-        </div>
-
-        <!-- Desktop Notice -->
-        <div class="desktop-notice glass-card" id="desktop-notice">
-            <div class="notice-icon">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" stroke-width="2" />
-                    <path d="M8 21H16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                    <path d="M12 17V21" stroke="currentColor" stroke-width="2" />
-                </svg>
-            </div>
-            <div class="notice-text">
-                <h4>Desktop Preview Mode</h4>
-                <p>For the full AR experience, scan the QR code on the home page with your mobile device.</p>
-                <a href="index.html" class="notice-link">Go to Home Page →</a>
-            </div>
-        </div>
-    </main>
+            <span>Show</span>
+        </button>
+    </div>
 
     <script src="scripts/viewer.js"></script>
 </body>

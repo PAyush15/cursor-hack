@@ -1,289 +1,107 @@
 /**
- * AR Viewer - Viewer Page Script
- * Handles model display, controls, and AR viewing
+ * AR Viewer - Direct-to-AR Script
+ * Optimized for one-tap AR entry and interactive controls
  */
 
-// Predefined models
-const MODELS = {
-    astronaut: {
-        name: 'Astronaut',
-        description: 'A detailed astronaut model from NASA. Perfect for space-themed AR experiences.',
-        src: 'https://modelviewer.dev/shared-assets/models/Astronaut.glb',
-        poster: 'https://modelviewer.dev/shared-assets/models/Astronaut.png'
-    },
-    robot: {
-        name: 'Shish Kebab',
-        description: 'A delicious-looking shish kebab. Great for food visualization in AR.',
-        src: 'https://modelviewer.dev/shared-assets/models/shishkebab.glb',
-        poster: 'https://modelviewer.dev/assets/poster-shishkebab.png'
-    },
-    chair: {
-        name: 'Modern Chair',
-        description: 'A sleek modern chair design. Perfect for furniture visualization.',
-        src: 'https://modelviewer.dev/shared-assets/models/Chair.glb',
-        poster: 'https://modelviewer.dev/assets/poster-chair.webp'
-    }
-};
-
-// DOM Elements
 let modelViewer;
-let modelTitle;
-let modelDescription;
-let rotateToggle;
-let resetView;
-let modelThumbs;
+let launchOverlay;
+let arHideBtn;
+let arRotateBtn;
+let isVisible = true;
+let isRotating = true;
 
 document.addEventListener('DOMContentLoaded', () => {
     initElements();
     initModelFromURL();
-    initControls();
-    initModelSelector();
-    initProgressBar();
-    detectARSupport();
+    initARHandlers();
 });
 
-/**
- * Initialize DOM element references
- */
 function initElements() {
     modelViewer = document.getElementById('model-viewer');
-    modelTitle = document.getElementById('model-title');
-    modelDescription = document.getElementById('model-description');
-    rotateToggle = document.getElementById('rotate-toggle');
-    resetView = document.getElementById('reset-view');
-    modelThumbs = document.querySelectorAll('.model-thumb');
+    launchOverlay = document.getElementById('launch-overlay');
+    arHideBtn = document.getElementById('ar-hide-btn');
+    arRotateBtn = document.getElementById('ar-rotate-btn');
+
+    // Launch AR on overlay click
+    if (launchOverlay) {
+        launchOverlay.addEventListener('click', () => {
+            console.log('User-triggered AR activation');
+            modelViewer.activateAR();
+        });
+    }
+
+    // AR Visibility Toggle
+    if (arHideBtn) {
+        arHideBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            isVisible = !isVisible;
+            modelViewer.style.opacity = isVisible ? '1' : '0';
+            arHideBtn.querySelector('span').textContent = isVisible ? 'Show' : 'Hide';
+            arHideBtn.classList.toggle('active', !isVisible);
+        });
+    }
+
+    // AR Rotation Toggle
+    if (arRotateBtn) {
+        arRotateBtn.classList.add('active'); // Default starting state
+        arRotateBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            isRotating = !isRotating;
+            if (isRotating) {
+                modelViewer.setAttribute('auto-rotate', '');
+                arRotateBtn.classList.add('active');
+            } else {
+                modelViewer.removeAttribute('auto-rotate');
+                arRotateBtn.classList.remove('active');
+            }
+        });
+    }
 }
 
-/**
- * Load model from URL parameters
- */
 function initModelFromURL() {
     const params = new URLSearchParams(window.location.search);
     const srcUrl = params.get('src');
-    const modelKey = params.get('model') || 'astronaut';
-    const modelName = params.get('name');
 
-    // Priority 1: Direct URL to GLB file (from GitHub models/ folder)
-    if (srcUrl) {
-        console.log('Loading model from src URL:', srcUrl);
-        loadModelFromUrl(srcUrl, modelName);
-        return;
-    }
+    // Default model if no src provided
+    const modelToLoad = srcUrl || 'https://modelviewer.dev/shared-assets/models/Astronaut.glb';
 
-    // Priority 2: Load predefined model by key
-    if (MODELS[modelKey]) {
-        loadModel(modelKey);
-        updateActiveThumb(modelKey);
-    } else {
-        // Fallback to astronaut
-        loadModel('astronaut');
-        updateActiveThumb('astronaut');
-    }
-}
+    console.log('Loading model for AR:', modelToLoad);
+    modelViewer.setAttribute('src', modelToLoad);
 
-/**
- * Load model from a direct URL (GitHub-hosted)
- */
-function loadModelFromUrl(url, name) {
-    console.log('Setting model-viewer src to:', url);
-
-    // Extract filename from URL for display
-    const filename = url.split('/').pop() || 'Custom Model';
-    const displayName = name || filename.replace('.glb', '');
-
-    modelViewer.setAttribute('src', url);
-    modelViewer.removeAttribute('poster');
-    modelViewer.removeAttribute('ios-src');
-
-    if (modelTitle) modelTitle.textContent = displayName;
-    if (modelDescription) modelDescription.textContent = 'Your custom 3D model. Tap "View in AR" to place it in your space.';
-
-    // Clear active state from thumbnails
-    modelThumbs.forEach(thumb => thumb.classList.remove('active'));
-}
-
-/**
- * Load a predefined model
- */
-function loadModel(modelKey) {
-    const model = MODELS[modelKey];
-    if (!model) return;
-
-    modelViewer.setAttribute('src', model.src);
-
-    if (model.poster) {
-        modelViewer.setAttribute('poster', model.poster);
-    } else {
-        modelViewer.removeAttribute('poster');
-    }
-
-    // Remove iOS-specific source for non-astronaut models
-    if (modelKey !== 'astronaut') {
-        modelViewer.removeAttribute('ios-src');
-    }
-
-    if (modelTitle) modelTitle.textContent = model.name;
-    if (modelDescription) modelDescription.textContent = model.description;
-
-    updateActiveThumb(modelKey);
-}
-
-/**
- * Update active thumbnail
- */
-function updateActiveThumb(activeKey) {
-    modelThumbs.forEach(thumb => {
-        const isActive = thumb.dataset.model === activeKey;
-        thumb.classList.toggle('active', isActive);
+    // If source is specified, try to hide overlay automatically when loaded
+    // (Though most browsers still need the click)
+    modelViewer.addEventListener('load', () => {
+        console.log('Model loaded and ready for AR');
+        const launchText = document.querySelector('.launch-text');
+        if (launchText) launchText.textContent = 'Ready! Tap to Start';
+        const launchSubtext = document.querySelector('.launch-subtext');
+        if (launchSubtext) launchSubtext.style.display = 'none';
     });
 }
 
-/**
- * Initialize model controls
- */
-function initControls() {
-    const visibilityToggle = document.getElementById('visibility-toggle');
-    const arHideBtn = document.getElementById('ar-hide-btn');
-    const rotateToggle = document.getElementById('rotate-toggle');
-    const arRotateBtn = document.getElementById('ar-rotate-btn');
-    const scaleUp = document.getElementById('scale-up');
-    const scaleDown = document.getElementById('scale-down');
-
-    let isVisible = true;
-    let currentScale = 1;
-
-    // Visibility toggle handler
-    const toggleVisibility = () => {
-        isVisible = !isVisible;
-        const opacity = isVisible ? '1' : '0';
-        modelViewer.style.opacity = opacity;
-
-        if (visibilityToggle) {
-            visibilityToggle.querySelector('span').textContent = isVisible ? 'Visible' : 'Hidden';
-            visibilityToggle.classList.toggle('active', isVisible);
-        }
-
-        if (arHideBtn) {
-            arHideBtn.querySelector('span').textContent = isVisible ? 'Show' : 'Hide';
-            arHideBtn.classList.toggle('active', !isVisible);
-        }
-    };
-
-    // Rotation toggle handler
-    const toggleRotation = () => {
-        let autoRotating = modelViewer.hasAttribute('auto-rotate');
-        if (autoRotating) {
-            modelViewer.removeAttribute('auto-rotate');
-        } else {
-            modelViewer.setAttribute('auto-rotate', '');
-        }
-
-        const newState = !autoRotating;
-        if (rotateToggle) rotateToggle.classList.toggle('active', newState);
-        if (arRotateBtn) arRotateBtn.classList.toggle('active', newState);
-    };
-
-    if (visibilityToggle) visibilityToggle.addEventListener('click', toggleVisibility);
-    if (arHideBtn) arHideBtn.addEventListener('click', toggleVisibility);
-
-    if (rotateToggle) rotateToggle.addEventListener('click', toggleRotation);
-    if (arRotateBtn) {
-        arRotateBtn.classList.add('active'); // Start active
-        arRotateBtn.addEventListener('click', toggleRotation);
-    }
-
-    // Scale handlers
-    if (scaleUp) {
-        scaleUp.addEventListener('click', () => {
-            currentScale = Math.min(currentScale * 1.25, 3);
-            modelViewer.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`);
-        });
-    }
-
-    if (scaleDown) {
-        scaleDown.addEventListener('click', () => {
-            currentScale = Math.max(currentScale * 0.8, 0.25);
-            modelViewer.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`);
-        });
-    }
-
-    // Reset view
-    if (resetView) {
-        resetView.addEventListener('click', () => {
-            modelViewer.resetTurntableRotation();
-            modelViewer.jumpCameraToGoal();
-            currentScale = 1;
-            modelViewer.setAttribute('scale', '1 1 1');
-            if (!isVisible) toggleVisibility();
-            if (!modelViewer.hasAttribute('auto-rotate')) toggleRotation();
-        });
-    }
-
-    // Auto-launch AR when model is loaded if requested
-    modelViewer.addEventListener('load', () => {
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('ar') === 'true' || params.get('src')) {
-            console.log('Auto-launching AR...');
+function initARHandlers() {
+    // Detect when AR session starts
+    modelViewer.addEventListener('ar-status', (event) => {
+        console.log('AR Status:', event.detail.status);
+        if (event.detail.status === 'session-started') {
+            if (launchOverlay) launchOverlay.style.opacity = '0';
             setTimeout(() => {
-                modelViewer.activateAR();
-            }, 1000);
-        }
-    });
-}
-
-/**
- * Initialize model selector
- */
-function initModelSelector() {
-    modelThumbs.forEach(thumb => {
-        thumb.addEventListener('click', () => {
-            const modelKey = thumb.dataset.model;
-            if (MODELS[modelKey]) {
-                loadModel(modelKey);
-
-                // Update URL without reload
-                const newUrl = new URL(window.location);
-                newUrl.searchParams.set('model', modelKey);
-                newUrl.searchParams.delete('src');
-                history.replaceState({}, '', newUrl);
+                if (launchOverlay) launchOverlay.style.display = 'none';
+            }, 500);
+        } else if (event.detail.status === 'not-presenting') {
+            // If user exits AR, show overlay again or redirect back?
+            if (launchOverlay) {
+                launchOverlay.style.display = 'flex';
+                launchOverlay.style.opacity = '1';
+                const launchText = document.querySelector('.launch-text');
+                if (launchText) launchText.textContent = 'Enter AR Again';
             }
-        });
-    });
-}
-
-/**
- * Initialize progress bar
- */
-function initProgressBar() {
-    modelViewer.addEventListener('progress', (event) => {
-        const progressBar = modelViewer.querySelector('.update-bar');
-        if (progressBar) {
-            const progress = event.detail.totalProgress * 100;
-            progressBar.style.width = `${progress}%`;
         }
     });
 
-    modelViewer.addEventListener('load', () => {
-        const progressBar = modelViewer.querySelector('.progress-bar');
-        if (progressBar) {
-            progressBar.style.opacity = '0';
-        }
+    // Error handling
+    modelViewer.addEventListener('error', (e) => {
+        console.error('Model Viewer Error:', e);
+        alert('Failed to load 3D model. Please check the file URL.');
     });
-}
-
-/**
- * Detect AR support
- */
-function detectARSupport() {
-    const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const arInstructions = document.getElementById('ar-instructions');
-    const desktopNotice = document.getElementById('desktop-notice');
-
-    if (isMobile) {
-        if (arInstructions) arInstructions.style.display = 'flex';
-        if (desktopNotice) desktopNotice.style.display = 'none';
-    } else {
-        if (arInstructions) arInstructions.style.display = 'none';
-        if (desktopNotice) desktopNotice.style.display = 'flex';
-    }
 }
