@@ -3,340 +3,133 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>AR Experience</title>
-    <!-- Model Viewer Component -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
-    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <title>AR.js Viewer</title>
+    <!-- A-Frame -->
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <!-- AR.js for A-Frame -->
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles/main.css">
+
     <style>
-        body,
-        html {
+        body {
             margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background: #000;
             overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            color: white;
+            font-family: 'Inter', sans-serif;
         }
 
-        #model-viewer {
-            width: 100%;
+        /* Loading Overlay */
+        .arjs-loader {
             height: 100%;
-            background-color: #000;
-        }
-
-        /* Permission / Launch Overlay */
-        .permission-request-ui {
-            position: fixed;
+            width: 100%;
+            position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 2000;
-            background: #000;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
             display: flex;
-            flex-direction: column;
+            justify-content: center;
             align-items: center;
-            justify-content: center;
+        }
+
+        .arjs-loader div {
             text-align: center;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        .permission-icon {
-            width: 80px;
-            height: 80px;
-            margin-bottom: 24px;
-            color: #6366f1;
-            animation: pulse-ring 2s infinite;
-        }
-
-        @keyframes pulse-ring {
-            0% {
-                transform: scale(0.95);
-                opacity: 0.8;
-            }
-
-            50% {
-                transform: scale(1.1);
-                opacity: 1;
-            }
-
-            100% {
-                transform: scale(0.95);
-                opacity: 0.8;
-            }
-        }
-
-        .permission-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 12px;
-        }
-
-        .permission-desc {
-            font-size: 1rem;
-            color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 32px;
-            max-width: 300px;
-        }
-
-        .start-camera-btn {
-            background: #6366f1;
+            font-size: 1.25em;
             color: white;
-            border: none;
-            padding: 16px 32px;
-            border-radius: 50px;
-            font-size: 1.1rem;
             font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
-            transition: transform 0.2s ease;
         }
 
-        .start-camera-btn:active {
-            transform: scale(0.96);
-        }
-
-        /* Floating AR Interactive Buttons */
-        .ar-controls {
+        /* Marker Instruction Overlay */
+        #marker-guide {
             position: fixed;
-            bottom: 40px;
-            left: 0;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            gap: 24px;
-            z-index: 6000;
-            pointer-events: none;
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-
-        /* Static Text Overlay */
-        .ar-static-text {
-            position: fixed;
-            top: 40px;
-            left: 0;
-            width: 100%;
-            text-align: center;
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 1rem;
-            font-weight: 600;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-            z-index: 6000;
-            pointer-events: none;
-        }
-
-        .big-ar-btn {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.9);
-            border: none;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            pointer-events: auto;
-            cursor: pointer;
-            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .big-ar-btn:active {
-            transform: scale(0.9);
-        }
-
-        .big-ar-btn svg {
-            width: 40px;
-            height: 40px;
-            color: #000;
-        }
-
-        .big-ar-btn.active {
-            background: #6366f1;
-        }
-
-        .big-ar-btn.active svg {
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
             color: white;
-        }
-
-        /* Hiding default AR button slot since we trigger manually */
-        .ar-button {
-            display: none;
-        }
-
-        /* Hotspot Styles */
-        .hotspot {
-            display: block;
-            width: 20px;
-            height: 20px;
-            border-radius: 10px;
-            border: none;
-            background-color: #6366f1;
-            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
-            margin: 0;
-            padding: 0;
-            cursor: pointer;
-            transition: transform 0.2s;
-            position: absolute;
-            /* Essential for slot positioning */
-            transform: translate(-50%, -50%);
-        }
-
-        .hotspot:not([data-visible]) {
-            background: transparent;
-            border: 4px solid #fff;
-            box-shadow: none;
-            width: 32px;
-            height: 32px;
-            pointer-events: none;
-        }
-
-        .hotspot:focus {
-            outline: none;
-        }
-
-        .hotspot>* {
-            transform: translateY(-50%);
-        }
-
-        .hotspot-annotation {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            color: #000;
-            display: block;
-            font-family: -apple-system, sans-serif;
-            font-size: 14px;
-            font-weight: 700;
-            left: calc(100% + 12px);
-            max-width: 140px;
-            padding: 8px 12px;
-            position: absolute;
-            top: 50%;
-            width: max-content;
-        }
-
-        .hotspot-icon {
-            width: auto;
-            height: auto;
-            padding: 10px 16px;
+            padding: 12px 24px;
             border-radius: 30px;
-            background: rgba(15, 15, 25, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            z-index: 1000;
             display: flex;
             align-items: center;
             gap: 10px;
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            transition: all 0.2s ease;
+            pointer-events: none;
         }
 
-        .hotspot-icon:active {
-            transform: translate(-50%, -50%) scale(0.9);
-            background: rgba(99, 102, 241, 0.9);
-        }
-
-        .hotspot-icon svg {
-            width: 20px;
-            height: 20px;
-        }
-
-        .hotspot-icon span {
-            font-weight: 600;
-            font-size: 14px;
-            letter-spacing: 0.5px;
+        #marker-guide img {
+            width: 24px;
+            border-radius: 4px;
+            background: white;
         }
     </style>
 </head>
 
-<body>
-
-    <!-- Permission / Start Overlay -->
-    <div id="permission-overlay" class="permission-request-ui">
-        <div class="permission-card">
-            <div class="permission-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                    <circle cx="12" cy="13" r="4"></circle>
-                </svg>
-            </div>
-            <div class="permission-title">Enable Camera</div>
-            <div class="permission-desc">Access to your camera is required to display the 3D model in your environment.
-            </div>
-            <button id="start-ar-btn" class="start-camera-btn">Allow Access</button>
-        </div>
+<body style="margin: 0; overflow: hidden;">
+    <!-- Loading Screen -->
+    <div class="arjs-loader">
+        <div>Loading AR Experience...</div>
     </div>
 
-    <!-- Static AR Text Overlay -->
-    <div class="ar-static-text">Interact Mode Active</div>
-
-    <!-- Model Viewer -->
-    <model-viewer id="model-viewer" src="" ar ar-modes="webxr scene-viewer quick-look" camera-controls
-        touch-action="none" shadow-intensity="1" environment-image="neutral" exposure="1" loading="eager" autoplay
-        auto-rotate>
-
-        <!-- Hotspot: Title/Name -->
-        <button class="hotspot" slot="hotspot-head" data-position="0 1.8 0" data-normal="0 1 0">
-            <div class="hotspot-annotation">My Avatar</div>
-        </button>
-
-        <!-- Hotspot: Website -->
-        <button class="hotspot hotspot-icon" slot="hotspot-website" data-position="0.5 1 0.5" data-normal="1 0 0"
-            id="btn-website">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="2" y1="12" x2="22" y2="12"></line>
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
-                </path>
-            </svg>
-            <span>Website</span>
-        </button>
-
-        <!-- Hotspot: Video -->
-        <button class="hotspot hotspot-icon" slot="hotspot-video" data-position="-0.5 1 0.5" data-normal="-1 0 0"
-            id="btn-video">
-            <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                <path d="M8 5v14l11-7z" />
-            </svg>
-            <span>Watch</span>
-        </button>
-    </model-viewer>
-
-    <!-- Floating Interactive Buttons -->
-    <div class="ar-controls" id="ar-controls">
-        <!-- Question Mark Button -->
-        <button class="big-ar-btn" id="btn-question" aria-label="Help">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-                <line x1="12" y1="17" x2="12.01" y2="17"></line>
-            </svg>
-        </button>
-
-        <!-- Info Button -->
-        <button class="big-ar-btn" id="btn-info" aria-label="Information">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="16" x2="12" y2="12"></line>
-                <line x1="12" y1="8" x2="12.01" y2="8"></line>
-            </svg>
-        </button>
+    <!-- Marker Guide -->
+    <div id="marker-guide">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/4/48/Hiro_marker_ARjs.png" alt="Hiro Marker">
+        <span>Point camera at Hiro Marker</span>
     </div>
+
+    <!-- A-Frame Scene -->
+    <a-scene vr-mode-ui="enabled: false;" renderer="logarithmicDepthBuffer: true; precision: medium;" embedded
+        arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
+
+        <!-- Assets -->
+        <a-assets>
+            <img id="icon-website" src="https://cdn-icons-png.flaticon.com/512/1006/1006771.png">
+            <img id="icon-video" src="https://cdn-icons-png.flaticon.com/512/1384/1384060.png">
+            <img id="icon-info" src="https://cdn-icons-png.flaticon.com/512/471/471662.png">
+        </a-assets>
+
+        <!-- Marker Anchor -->
+        <a-marker preset="hiro" id="marker-root">
+
+            <!-- Dynamic Model Container -->
+            <a-entity id="model-container" position="0 0 0" scale="0.5 0.5 0.5">
+                <!-- Model will be injected here -->
+            </a-entity>
+
+            <!-- Floating Buttons Container -->
+            <a-entity id="buttons-container" position="0 0.5 0">
+
+                <!-- Website Button -->
+                <a-entity position="1.2 0 0" class="clickable" id="btn-website">
+                    <a-circle radius="0.4" color="white" material="opacity: 0.9; transparent: true"></a-circle>
+                    <a-image src="#icon-website" position="0 0 0.01" scale="0.5 0.5 0.5"></a-image>
+                    <a-text value="Website" position="0 -0.6 0" align="center" width="4" color="white"></a-text>
+                </a-entity>
+
+                <!-- Video Button -->
+                <a-entity position="-1.2 0 0" class="clickable" id="btn-video">
+                    <a-circle radius="0.4" color="white" material="opacity: 0.9; transparent: true"></a-circle>
+                    <a-image src="#icon-video" position="0 0 0.01" scale="0.5 0.5 0.5"></a-image>
+                    <a-text value="Watch" position="0 -0.6 0" align="center" width="4" color="white"></a-text>
+                </a-entity>
+
+                <!-- Info Button -->
+                <a-entity position="0 1.5 0" class="clickable" id="btn-info">
+                    <a-circle radius="0.3" color="white" material="opacity: 0.9; transparent: true"></a-circle>
+                    <a-image src="#icon-info" position="0 0 0.01" scale="0.4 0.4 0.4"></a-image>
+                </a-entity>
+
+            </a-entity>
+
+        </a-marker>
+
+        <!-- Camera with Cursor for Interaction -->
+        <a-entity camera>
+            <a-cursor fuse="false" raycaster="objects: .clickable" color="#6366f1" scale="1.5 1.5 1.5">
+            </a-cursor>
+        </a-entity>
+
+    </a-scene>
 
     <script src="scripts/viewer.js"></script>
 </body>

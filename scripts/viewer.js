@@ -1,120 +1,93 @@
 /**
- * AR Viewer - Seamless Permission Flow
- * Handles "Scan -> Permission -> AR" flow and interactive buttons
+ * AR Viewer - AR.js Implementation
+ * Handles marker-based AR with A-Frame
  */
 
-let modelViewer;
-let permissionOverlay;
-let startArBtn;
-let btnQuestion;
-let btnInfo;
-
 document.addEventListener('DOMContentLoaded', () => {
-    initElements();
-    initModelFromURL();
-    initInteractions();
-    initARHandlers();
+    initARExperience();
 });
 
-function initElements() {
-    modelViewer = document.getElementById('model-viewer');
-    permissionOverlay = document.getElementById('permission-overlay');
-    startArBtn = document.getElementById('start-ar-btn');
-    btnQuestion = document.getElementById('btn-question');
-    btnInfo = document.getElementById('btn-info');
-}
+function initARExperience() {
+    const loader = document.querySelector('.arjs-loader');
+    const modelContainer = document.querySelector('#model-container');
 
-function initModelFromURL() {
+    // Hide loader when scene is loaded
+    const scene = document.querySelector('a-scene');
+    scene.addEventListener('loaded', () => {
+        console.log('AR Scene loaded');
+        if (loader) loader.style.display = 'none';
+    });
+
+    // Load Model from URL
     const params = new URLSearchParams(window.location.search);
     const srcUrl = params.get('src');
+    const modelUrl = srcUrl || 'https://modelviewer.dev/shared-assets/models/Astronaut.glb';
 
-    // Default model if no src provided (fallback)
-    const modelToLoad = srcUrl || 'https://modelviewer.dev/shared-assets/models/Astronaut.glb';
+    console.log('Loading model:', modelUrl);
 
-    console.log('Setting up AR model:', modelToLoad);
-    modelViewer.setAttribute('src', modelToLoad);
+    // Create GLTF entity dynamically
+    const modelEntity = document.createElement('a-entity');
+    modelEntity.setAttribute('gltf-model', modelUrl);
+    modelEntity.setAttribute('scale', '0.5 0.5 0.5'); // Default scale, maybe adjusting based on model size is needed
+    modelEntity.setAttribute('position', '0 0.5 0'); // Slight offset from marker center
+    modelEntity.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear');
+
+    modelContainer.appendChild(modelEntity);
+
+    // Setup Interactions
+    setupButtons();
 }
 
-function initInteractions() {
-    // 1. Permission / Start Button -> Launch AR
-    if (startArBtn) {
-        startArBtn.addEventListener('click', () => {
-            console.log('Requesting AR Session...');
-            // This tap satisfies the browser's user gesture requirement
-            modelViewer.activateAR();
-        });
-    }
-
-    // 2. Interactive Button: Question Mark
-    if (btnQuestion) {
-        btnQuestion.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevent clicks passing through to AR scene
-            toggleButtonState(btnQuestion);
-            console.log('Question button clicked');
-            // Future feature: Show help overlay
-        });
-    }
-
-    // 3. Info Button Logic
-    if (btnInfo) {
-        btnInfo.addEventListener('click', (e) => {
-            e.stopPropagation();
-            animateButton(btnInfo);
-            // Example info - in a real app this could show a modal
-            const modelName = modelViewer.src.split('/').pop();
-            alert(`Model Information:\nFilename: ${modelName}\nLighting: Neutral Studio`);
-        });
-    }
-
-    // 4. Hotspot: Website
-    const btnWebsite = document.getElementById('btn-website');
+function setupButtons() {
+    // Website Button
+    const btnWebsite = document.querySelector('#btn-website');
     if (btnWebsite) {
-        btnWebsite.addEventListener('click', (e) => {
-            e.stopPropagation();
-            // Using the user's name from repo as placeholder or generic
+        btnWebsite.addEventListener('click', () => {
+            console.log('Website button clicked');
+            // In AR.js/A-Frame with cursor, touch events map to clicks
             window.open('https://github.com/PAyush15', '_blank');
         });
-    }
 
-    // 5. Hotspot: Video
-    const btnVideo = document.getElementById('btn-video');
-    if (btnVideo) {
-        btnVideo.addEventListener('click', (e) => {
-            e.stopPropagation();
-            alert('Video content would play here.');
+        // Visual feedback
+        btnWebsite.addEventListener('mouseenter', () => {
+            btnWebsite.setAttribute('scale', '1.2 1.2 1.2');
+        });
+        btnWebsite.addEventListener('mouseleave', () => {
+            btnWebsite.setAttribute('scale', '1 1 1');
         });
     }
-}
 
-function toggleButtonState(btn) {
-    // Simple visual feedback for "interaction"
-    btn.classList.toggle('active');
+    // Video Button
+    const btnVideo = document.querySelector('#btn-video');
+    if (btnVideo) {
+        btnVideo.addEventListener('click', () => {
+            console.log('Video button clicked');
+            alert('Video Playback Feature\n(Placeholder for video content)');
+        });
 
-    // Reset after a short delay to simulate a click/action
-    setTimeout(() => {
-        btn.classList.remove('active');
-    }, 200);
-}
+        btnVideo.addEventListener('mouseenter', () => {
+            btnVideo.setAttribute('scale', '1.2 1.2 1.2');
+        });
+        btnVideo.addEventListener('mouseleave', () => {
+            btnVideo.setAttribute('scale', '1 1 1');
+        });
+    }
 
-function initARHandlers() {
-    // Hide the permission overlay as soon as the session starts
-    modelViewer.addEventListener('ar-status', (event) => {
-        console.log('AR Status:', event.detail.status);
+    // Info Button
+    const btnInfo = document.querySelector('#btn-info');
+    if (btnInfo) {
+        btnInfo.addEventListener('click', () => {
+            console.log('Info button clicked');
+            const params = new URLSearchParams(window.location.search);
+            const modelName = params.get('src') ? params.get('src').split('/').pop() : 'Default Model';
+            alert(`AR Viewer Info:\nModel: ${modelName}\nTracking: Hiro Marker`);
+        });
 
-        if (event.detail.status === 'session-started') {
-            permissionOverlay.style.display = 'none';
-        } else if (event.detail.status === 'not-presenting') {
-            // User exited AR - show permission screen again to allow re-entry
-            permissionOverlay.style.display = 'flex';
-        }
-    });
-
-    modelViewer.addEventListener('error', (e) => {
-        console.error('AR Error:', e);
-        // If error, update UI to show message
-        const title = document.querySelector('.permission-title');
-        const desc = document.querySelector('.permission-desc');
-        if (title) title.textContent = 'Error Loading Model';
-        if (desc) desc.textContent = 'Please check your internet connection or the file validity.';
-    });
+        btnInfo.addEventListener('mouseenter', () => {
+            btnInfo.setAttribute('scale', '1.2 1.2 1.2');
+        });
+        btnInfo.addEventListener('mouseleave', () => {
+            btnInfo.setAttribute('scale', '1 1 1');
+        });
+    }
 }
