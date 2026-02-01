@@ -12,41 +12,48 @@
 <body style="margin:0; overflow:hidden; font-family:sans-serif;">
 
     <!-- Status Bar -->
-    <div id="status-bar" style="position:fixed; top:15px; left:50%; transform:translateX(-50%); z-index:99999;">
+    <div style="position:fixed; top:15px; left:50%; transform:translateX(-50%); z-index:99999; display:flex; gap:10px;">
         <span id="status"
-            style="background:rgba(0,0,0,0.8); color:white; padding:12px 20px; border-radius:30px; font-size:14px; font-weight:600; display:inline-block;">📷
-            Point at Hiro Marker</span>
+            style="background:rgba(0,0,0,0.8); color:white; padding:12px 20px; border-radius:30px; font-size:14px; font-weight:600;">📷
+            Point at Hiro</span>
+        <button onclick="location.reload()"
+            style="width:50px; height:50px; background:white; border:none; border-radius:50%; font-size:22px; box-shadow:0 2px 10px rgba(0,0,0,0.3);">🔄</button>
     </div>
 
-    <!-- BUTTONS - Hidden by default, shown when model spawns -->
-    <div id="buttons"
-        style="display:none; position:fixed; bottom:30px; left:0; right:0; text-align:center; z-index:99999;">
-        <button onclick="openWebsite()"
-            style="width:100px; height:80px; margin:5px; background:white; border:none; border-radius:16px; font-size:14px; font-weight:700; box-shadow:0 4px 20px rgba(0,0,0,0.5); vertical-align:top;">
-            <div style="font-size:28px;">🌐</div>
-            Website
-        </button>
-        <button onclick="playVideo()"
-            style="width:100px; height:80px; margin:5px; background:white; border:none; border-radius:16px; font-size:14px; font-weight:700; box-shadow:0 4px 20px rgba(0,0,0,0.5); vertical-align:top;">
-            <div style="font-size:28px;">▶️</div>
-            Video
-        </button>
-        <button onclick="showInfo()"
-            style="width:100px; height:80px; margin:5px; background:white; border:none; border-radius:16px; font-size:14px; font-weight:700; box-shadow:0 4px 20px rgba(0,0,0,0.5); vertical-align:top;">
-            <div style="font-size:28px;">ℹ️</div>
-            Info
-        </button>
+    <!-- BUTTONS - Using Table Layout for Guaranteed Fixed Sizes -->
+    <div style="position:fixed; bottom:30px; left:50%; transform:translateX(-50%); z-index:99999;">
+        <table style="border-collapse:separate; border-spacing:10px;">
+            <tr>
+                <td>
+                    <button onclick="openWebsite()"
+                        style="width:100px; height:80px; background:white; border:none; border-radius:16px; font-size:14px; font-weight:700; box-shadow:0 4px 20px rgba(0,0,0,0.5);">
+                        <div style="font-size:28px;">🌐</div>
+                        Website
+                    </button>
+                </td>
+                <td>
+                    <button onclick="playVideo()"
+                        style="width:100px; height:80px; background:white; border:none; border-radius:16px; font-size:14px; font-weight:700; box-shadow:0 4px 20px rgba(0,0,0,0.5);">
+                        <div style="font-size:28px;">▶️</div>
+                        Video
+                    </button>
+                </td>
+                <td>
+                    <button onclick="showInfo()"
+                        style="width:100px; height:80px; background:white; border:none; border-radius:16px; font-size:14px; font-weight:700; box-shadow:0 4px 20px rgba(0,0,0,0.5);">
+                        <div style="font-size:28px;">ℹ️</div>
+                        Info
+                    </button>
+                </td>
+            </tr>
+        </table>
     </div>
-
-    <!-- Refresh button always visible -->
-    <button onclick="location.reload()"
-        style="position:fixed; top:15px; right:15px; width:50px; height:50px; background:white; border:none; border-radius:50%; font-size:22px; box-shadow:0 2px 10px rgba(0,0,0,0.3); z-index:99999;">🔄</button>
 
     <a-scene vr-mode-ui="enabled: false" loading-screen="enabled: false" renderer="antialias: true; alpha: true"
-        embedded arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false; patternRatio: 0.9">
+        embedded arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
 
-        <a-marker preset="hiro" id="hiro-marker" smooth="true" smoothCount="10" smoothTolerance="0.01"
-            smoothThreshold="5">
+        <a-marker preset="hiro" id="hiro-marker" smooth="true" smoothCount="5" smoothTolerance="0.01"
+            smoothThreshold="2">
             <a-entity gltf-model="url(models/model.glb)" position="0 0 0" scale="1 1 1"
                 animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear">
             </a-entity>
@@ -60,25 +67,15 @@
         function playVideo() { alert('Video Feature - Coming Soon!'); }
         function showInfo() { alert('AR Viewer\nModel: model.glb\nMarker: Hiro'); }
 
-        // Wait for scene to load
-        document.querySelector('a-scene').addEventListener('loaded', function () {
-            var marker = document.querySelector('#hiro-marker');
-            var status = document.querySelector('#status');
-            var buttons = document.querySelector('#buttons');
-
-            marker.addEventListener('markerFound', function () {
-                status.textContent = '✅ Model Active';
-                status.style.background = 'rgba(34, 197, 94, 0.9)';
-                // SHOW BUTTONS when marker found
-                buttons.style.display = 'block';
-            });
-
-            marker.addEventListener('markerLost', function () {
-                status.textContent = '📷 Point at Hiro Marker';
-                status.style.background = 'rgba(0,0,0,0.8)';
-                // HIDE BUTTONS when marker lost
-                buttons.style.display = 'none';
-            });
+        var marker = document.querySelector('#hiro-marker');
+        var status = document.querySelector('#status');
+        marker.addEventListener('markerFound', function () {
+            status.textContent = '✅ Model Active';
+            status.style.background = 'rgba(34, 197, 94, 0.9)';
+        });
+        marker.addEventListener('markerLost', function () {
+            status.textContent = '📷 Point at Hiro';
+            status.style.background = 'rgba(0,0,0,0.8)';
         });
     </script>
 </body>
