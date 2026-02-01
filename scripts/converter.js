@@ -356,75 +356,11 @@ function viewInAR() {
 
     const modelName = currentFile.name.replace(/\.[^.]+$/, '');
 
-    // Use IndexedDB for large files (supports much larger sizes than sessionStorage)
-    storeModelInIndexedDB(glbBlob, modelName)
-        .then(() => {
-            window.location.href = 'viewer.html?model=custom';
-        })
-        .catch((error) => {
-            console.error('Failed to store model:', error);
-            // Fallback: create a blob URL
-            const blobUrl = URL.createObjectURL(glbBlob);
-            try {
-                sessionStorage.setItem('customModelUrl', blobUrl);
-                sessionStorage.setItem('customModelName', modelName);
-                window.location.href = 'viewer.html?model=custom';
-            } catch (e) {
-                alert('Model is too large. Please download the GLB file and host it on a web server.');
-                downloadGLB();
-            }
-        });
-}
+    // Show instructions for GitHub upload
+    alert(`To view in AR:\n\n1. Download the GLB file (click "Download GLB")\n2. Upload "${modelName}.glb" to your GitHub repo in the models/ folder\n3. Go to the home page and enter "${modelName}.glb" in the custom model field\n4. Scan the QR code with your phone`);
 
-/**
- * Store model in IndexedDB for large file support
- * Stores as 'customModel' (current) and also adds to models list
- */
-function storeModelInIndexedDB(blob, name) {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open('ARViewerDB', 2);
-
-        request.onerror = () => reject(request.error);
-
-        request.onupgradeneeded = (event) => {
-            const db = event.target.result;
-            if (!db.objectStoreNames.contains('models')) {
-                db.createObjectStore('models', { keyPath: 'id' });
-            }
-        };
-
-        request.onsuccess = (event) => {
-            const db = event.target.result;
-            const transaction = db.transaction(['models'], 'readwrite');
-            const store = transaction.objectStore('models');
-
-            // Store as single custom model (overwrites previous)
-            const modelData = {
-                id: 'customModel',
-                name: name,
-                blob: blob,
-                timestamp: Date.now()
-            };
-
-            console.log('Storing model in IndexedDB:', name, blob.size, 'bytes');
-
-            const putRequest = store.put(modelData);
-
-            putRequest.onsuccess = () => {
-                console.log('Model stored successfully');
-            };
-
-            putRequest.onerror = () => {
-                console.error('Failed to store model:', putRequest.error);
-            };
-
-            transaction.oncomplete = () => {
-                console.log('Transaction complete');
-                resolve();
-            };
-            transaction.onerror = () => reject(transaction.error);
-        };
-    });
+    // Download the file
+    downloadGLB();
 }
 
 function showSection(section) {
