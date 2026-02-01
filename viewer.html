@@ -110,21 +110,30 @@
         /* Floating AR Interactive Buttons */
         .ar-controls {
             position: fixed;
-            bottom: 50px;
+            bottom: 40px;
             left: 0;
             width: 100%;
-            display: none;
-            /* Shown via JS upon AR entry */
+            display: flex;
             justify-content: center;
-            gap: 40px;
-            z-index: 1000;
+            gap: 24px;
+            z-index: 6000;
             pointer-events: none;
-            /* Let clicks pass through around buttons */
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
-        :where(model-viewer)[ar-status="object-placed"]~.ar-controls,
-        :where(model-viewer)[ar-status="session-started"]~.ar-controls {
-            display: flex;
+        /* Static Text Overlay */
+        .ar-static-text {
+            position: fixed;
+            top: 40px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1rem;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            z-index: 6000;
+            pointer-events: none;
         }
 
         .big-ar-btn {
@@ -165,6 +174,91 @@
         .ar-button {
             display: none;
         }
+
+        /* Hotspot Styles */
+        .hotspot {
+            display: block;
+            width: 20px;
+            height: 20px;
+            border-radius: 10px;
+            border: none;
+            background-color: #6366f1;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+            margin: 0;
+            padding: 0;
+            cursor: pointer;
+            transition: transform 0.2s;
+            position: absolute;
+            /* Essential for slot positioning */
+            transform: translate(-50%, -50%);
+        }
+
+        .hotspot:not([data-visible]) {
+            background: transparent;
+            border: 4px solid #fff;
+            box-shadow: none;
+            width: 32px;
+            height: 32px;
+            pointer-events: none;
+        }
+
+        .hotspot:focus {
+            outline: none;
+        }
+
+        .hotspot>* {
+            transform: translateY(-50%);
+        }
+
+        .hotspot-annotation {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            color: #000;
+            display: block;
+            font-family: -apple-system, sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            left: calc(100% + 12px);
+            max-width: 140px;
+            padding: 8px 12px;
+            position: absolute;
+            top: 50%;
+            width: max-content;
+        }
+
+        .hotspot-icon {
+            width: auto;
+            height: auto;
+            padding: 10px 16px;
+            border-radius: 30px;
+            background: rgba(15, 15, 25, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .hotspot-icon:active {
+            transform: translate(-50%, -50%) scale(0.9);
+            background: rgba(99, 102, 241, 0.9);
+        }
+
+        .hotspot-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .hotspot-icon span {
+            font-weight: 600;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+        }
     </style>
 </head>
 
@@ -172,20 +266,53 @@
 
     <!-- Permission / Start Overlay -->
     <div id="permission-overlay" class="permission-request-ui">
-        <div class="permission-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                <circle cx="12" cy="13" r="4"></circle>
-            </svg>
+        <div class="permission-card">
+            <div class="permission-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                    <circle cx="12" cy="13" r="4"></circle>
+                </svg>
+            </div>
+            <div class="permission-title">Enable Camera</div>
+            <div class="permission-desc">Access to your camera is required to display the 3D model in your environment.
+            </div>
+            <button id="start-ar-btn" class="start-camera-btn">Allow Access</button>
         </div>
-        <div class="permission-title">Camera Access Required</div>
-        <div class="permission-desc">Tap below to allow camera access and place the object in your space.</div>
-        <button id="start-ar-btn" class="start-camera-btn">Enable Camera & Start AR</button>
     </div>
+
+    <!-- Static AR Text Overlay -->
+    <div class="ar-static-text">Interact Mode Active</div>
 
     <!-- Model Viewer -->
     <model-viewer id="model-viewer" src="" ar ar-modes="webxr scene-viewer quick-look" camera-controls
-        touch-action="none" environment-image="neutral" exposure="1" shadow-intensity="1" loading="eager">
+        touch-action="none" shadow-intensity="1" environment-image="neutral" exposure="1" loading="eager" autoplay
+        auto-rotate>
+
+        <!-- Hotspot: Title/Name -->
+        <button class="hotspot" slot="hotspot-head" data-position="0 1.8 0" data-normal="0 1 0">
+            <div class="hotspot-annotation">My Avatar</div>
+        </button>
+
+        <!-- Hotspot: Website -->
+        <button class="hotspot hotspot-icon" slot="hotspot-website" data-position="0.5 1 0.5" data-normal="1 0 0"
+            id="btn-website">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+                </path>
+            </svg>
+            <span>Website</span>
+        </button>
+
+        <!-- Hotspot: Video -->
+        <button class="hotspot hotspot-icon" slot="hotspot-video" data-position="-0.5 1 0.5" data-normal="-1 0 0"
+            id="btn-video">
+            <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                <path d="M8 5v14l11-7z" />
+            </svg>
+            <span>Watch</span>
+        </button>
     </model-viewer>
 
     <!-- Floating Interactive Buttons -->

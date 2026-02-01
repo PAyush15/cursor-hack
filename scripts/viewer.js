@@ -55,13 +55,33 @@ function initInteractions() {
         });
     }
 
-    // 3. Interactive Button: Info
+    // 3. Info Button Logic
     if (btnInfo) {
         btnInfo.addEventListener('click', (e) => {
             e.stopPropagation();
-            toggleButtonState(btnInfo);
-            console.log('Info button clicked');
-            // Future feature: Show model info card
+            animateButton(btnInfo);
+            // Example info - in a real app this could show a modal
+            const modelName = modelViewer.src.split('/').pop();
+            alert(`Model Information:\nFilename: ${modelName}\nLighting: Neutral Studio`);
+        });
+    }
+
+    // 4. Hotspot: Website
+    const btnWebsite = document.getElementById('btn-website');
+    if (btnWebsite) {
+        btnWebsite.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // Using the user's name from repo as placeholder or generic
+            window.open('https://github.com/PAyush15', '_blank');
+        });
+    }
+
+    // 5. Hotspot: Video
+    const btnVideo = document.getElementById('btn-video');
+    if (btnVideo) {
+        btnVideo.addEventListener('click', (e) => {
+            e.stopPropagation();
+            alert('Video content would play here.');
         });
     }
 }
