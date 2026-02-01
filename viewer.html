@@ -5,9 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <title>AR Viewer</title>
-    <!-- A-Frame -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <!-- AR.js -->
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 
     <style>
@@ -17,7 +15,6 @@
             font-family: -apple-system, sans-serif;
         }
 
-        /* Static Button Overlay (Always Visible) */
         .button-overlay {
             position: fixed;
             bottom: 30px;
@@ -25,41 +22,31 @@
             width: 100%;
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 15px;
             z-index: 9999;
-            padding: 0 20px;
+            padding: 0 15px;
             box-sizing: border-box;
         }
 
         .ar-btn {
-            background: rgba(255, 255, 255, 0.95);
+            background: white;
             border: none;
-            border-radius: 16px;
-            padding: 16px 28px;
-            font-size: 16px;
+            border-radius: 12px;
+            padding: 14px 20px;
+            font-size: 15px;
             font-weight: 700;
             color: #111;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: transform 0.2s ease;
         }
 
         .ar-btn:active {
-            transform: scale(0.95);
+            background: #eee;
         }
 
-        .ar-btn svg {
-            width: 20px;
-            height: 20px;
-        }
-
-        /* Instruction Banner */
-        .instruction {
+        .top-bar {
             position: fixed;
-            top: 20px;
+            top: 15px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.7);
@@ -74,67 +61,57 @@
 
 <body>
 
-    <!-- Instruction -->
-    <div class="instruction">Point camera at Hiro Marker</div>
+    <div class="top-bar" id="status">Point at Hiro Marker</div>
 
-    <!-- Static HTML Buttons (Always Clickable) -->
     <div class="button-overlay">
-        <button class="ar-btn" id="btn-website">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="2" y1="12" x2="22" y2="12"></line>
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
-                </path>
-            </svg>
-            Website
-        </button>
-
-        <button class="ar-btn" id="btn-video">
-            <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                <path d="M8 5v14l11-7z" />
-            </svg>
-            Video
-        </button>
-
-        <button class="ar-btn" id="btn-info">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="16" x2="12" y2="12"></line>
-                <line x1="12" y1="8" x2="12.01" y2="8"></line>
-            </svg>
-            Info
-        </button>
+        <button class="ar-btn" onclick="openWebsite()">Website</button>
+        <button class="ar-btn" onclick="playVideo()">Video</button>
+        <button class="ar-btn" onclick="showInfo()">Info</button>
     </div>
 
-    <!-- A-Frame AR Scene -->
-    <a-scene vr-mode-ui="enabled: false;" renderer="antialias: true; alpha: true;" embedded
-        arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
+    <a-scene vr-mode-ui="enabled: false" loading-screen="enabled: false" renderer="antialias: true; alpha: true"
+        embedded arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false">
 
-        <!-- Marker -->
-        <a-marker preset="hiro">
-            <!-- Model -->
-            <a-entity id="ar-model" gltf-model="models/model.glb" position="0 0 0" scale="1.5 1.5 1.5"
-                animation="property: rotation; to: 0 360 0; loop: true; dur: 15000; easing: linear">
+        <a-marker preset="hiro" id="hiro-marker">
+            <a-entity id="model" gltf-model="url(models/model.glb)" position="0 0 0" scale="1 1 1"
+                animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear">
             </a-entity>
         </a-marker>
 
-        <!-- Camera (No cursor needed - buttons are HTML) -->
         <a-entity camera></a-entity>
-
     </a-scene>
 
     <script>
-        // Simple Button Interactions
-        document.getElementById('btn-website').addEventListener('click', () => {
+        // Button Functions (using onclick for simplicity)
+        function openWebsite() {
+            alert('Opening Website...');
             window.open('https://github.com/PAyush15', '_blank');
-        });
+        }
 
-        document.getElementById('btn-video').addEventListener('click', () => {
-            alert('Video Feature Coming Soon');
-        });
+        function playVideo() {
+            alert('Video Feature - Coming Soon!');
+        }
 
-        document.getElementById('btn-info').addEventListener('click', () => {
-            alert('AR Viewer\\nModel: model.glb\\nTracking: Hiro Marker');
+        function showInfo() {
+            alert('AR Viewer\nModel: model.glb\nMarker: Hiro');
+        }
+
+        // Marker Detection Feedback
+        document.addEventListener('DOMContentLoaded', function () {
+            var marker = document.querySelector('#hiro-marker');
+            var status = document.querySelector('#status');
+
+            if (marker) {
+                marker.addEventListener('markerFound', function () {
+                    status.textContent = 'Model Loaded!';
+                    status.style.background = 'rgba(16, 185, 129, 0.9)';
+                });
+
+                marker.addEventListener('markerLost', function () {
+                    status.textContent = 'Point at Hiro Marker';
+                    status.style.background = 'rgba(0,0,0,0.7)';
+                });
+            }
         });
     </script>
 </body>
